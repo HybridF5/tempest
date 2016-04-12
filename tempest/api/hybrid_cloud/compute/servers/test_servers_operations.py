@@ -1,5 +1,6 @@
 import testtools
 from oslo_log import log
+import netaddr
 
 from tempest.api.compute import base
 from tempest.api.compute.servers.test_attach_interfaces import AttachInterfacesTestJSON
@@ -91,6 +92,20 @@ class HybridCreateVCloudServersTestJSON(CreateServersTestJSON):
             availability_zone=CONF.compute.vcloud_availability_zone)
         cls.server = (cls.client.show_server(cls.server_initial['id'])
                       ['server'])
+
+    @test.attr(type='smoke')
+    @test.idempotent_id('5de47127-9977-400a-936f-abcfbec1218f')
+    def test_verify_server_details(self):
+        # Verify the specified server attributes are set correctly
+        self.assertEqual(self.accessIPv4, self.server['accessIPv4'])
+        # NOTE(maurosr): See http://tools.ietf.org/html/rfc5952 (section 4)
+        # Here we compare directly with the canonicalized format.
+        self.assertEqual(self.server['accessIPv6'],
+                         str(netaddr.IPAddress(self.accessIPv6)))
+        self.assertEqual(self.name, self.server['name'])
+        self.assertEqual(self.image_ref, self.server['image']['id'])
+        self.assertEqual(self.flavor_ref, self.server['flavor']['id'])
+        self.assertTrue(cmp(self.server['metadata'], self.meta) > 0)
 
     @testtools.skip('Do not support host operation')
     @test.idempotent_id('ed20d3fb-9d1f-4329-b160-543fbd5d9811')
