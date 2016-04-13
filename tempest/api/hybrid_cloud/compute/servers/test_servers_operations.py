@@ -1,6 +1,9 @@
 import testtools
 from oslo_log import log
 import netaddr
+from tempest.common import fixed_network
+from six import moves
+import base64
 
 from tempest.api.compute import base
 from tempest.api.compute.servers.test_attach_interfaces import AttachInterfacesTestJSON
@@ -422,6 +425,7 @@ class HybridDeleteVCloudServersTestJSON(DeleteServersTestJSON):
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
+    @testtools.skip('Volume test support this operation')
     @test.idempotent_id('d0f3f0d6-d9b6-4a32-8da4-23015dcab23c')
     @test.services('volume')
     def test_delete_server_while_in_attached_volume(self):
@@ -794,6 +798,26 @@ class HybridVCloudServerActionsTestJSON(ServerActionsTestJSON):
             # Rebuild server if something happened to it during a test
             self.__class__.server_id = self.rebuild_server(
                 self.server_id, validatable=True)
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.vcloud_availability_zone,
+            **kwargs)
+        return server['id']
+
 
     @testtools.skip('Do not support host operation')
     @test.idempotent_id('1499262a-9328-4eda-9068-db1ac57498d2')
@@ -1002,6 +1026,26 @@ class HybridAwsServerActionsTestJSON(ServerActionsTestJSON):
             # Rebuild server if something happened to it during a test
             self.__class__.server_id = self.rebuild_server(
                 self.server_id, validatable=True)
+
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.aws_availability_zone,
+            **kwargs)
+        return server['id']
 
     @testtools.skip('Do not support host operation')
     @test.idempotent_id('1499262a-9328-4eda-9068-db1ac57498d2')
@@ -1661,6 +1705,26 @@ class HybridVCloudServersNegativeTestJSON(ServersNegativeTestJSON):
                                         availability_zone=CONF.compute.vcloud_availability_zone)
         cls.server_id = server['id']
 
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.vcloud_availability_zone,
+            **kwargs)
+        return server['id']
+
 class HybridAwsServersNegativeTestJSON(ServersNegativeTestJSON):
     """Test servers negative"""
 
@@ -1681,6 +1745,24 @@ class HybridVCloudVirtualInterfacesTestJSON(VirtualInterfacesTestJSON):
                                         availability_zone=CONF.compute.vcloud_availability_zone)
         cls.server_id = server['id']
 
+    @test.idempotent_id('96c4e2ef-5e4d-4d7f-87f5-fed6dca18016')
+    @test.services('network')
+    def test_list_virtual_interfaces(self):
+        # Positive test:Should be able to GET the virtual interfaces list
+        # for a given server_id
+        import pdb;pdb.set_trace()
+        output = self.client.list_virtual_interfaces(self.server_id)
+        self.assertIsNotNone(output)
+        virt_ifaces = output
+        self.assertNotEqual(0, len(virt_ifaces['virtual_interfaces']),
+                            'Expected virtual interfaces, got 0 '
+                            'interfaces.')
+        for virt_iface in virt_ifaces['virtual_interfaces']:
+            mac_address = virt_iface['mac_address']
+            self.assertTrue(netaddr.valid_mac(mac_address),
+                            "Invalid mac address detected. mac address: %s"
+                            % mac_address)
+
 class HybridAwsVirtualInterfacesTestJSON(VirtualInterfacesTestJSON):
     """Test virtual interface"""
 
@@ -1690,6 +1772,23 @@ class HybridAwsVirtualInterfacesTestJSON(VirtualInterfacesTestJSON):
         server = cls.create_test_server(wait_until='ACTIVE',
                                         availability_zone=CONF.compute.aws_availability_zone)
         cls.server_id = server['id']
+
+    @test.idempotent_id('96c4e2ef-5e4d-4d7f-87f5-fed6dca18016')
+    @test.services('network')
+    def test_list_virtual_interfaces(self):
+        # Positive test:Should be able to GET the virtual interfaces list
+        # for a given server_id
+        output = self.client.list_virtual_interfaces(self.server_id)
+        self.assertIsNotNone(output)
+        virt_ifaces = output
+        self.assertNotEqual(0, len(virt_ifaces['virtual_interfaces']),
+                            'Expected virtual interfaces, got 0 '
+                            'interfaces.')
+        for virt_iface in virt_ifaces['virtual_interfaces']:
+            mac_address = virt_iface['mac_address']
+            self.assertTrue(netaddr.valid_mac(mac_address),
+                            "Invalid mac address detected. mac address: %s"
+                            % mac_address)
 
 class HybridVirtualInterfacesNegativeTestJSON(VirtualInterfacesNegativeTestJSON):
     """Test virtual interfaces negative"""
