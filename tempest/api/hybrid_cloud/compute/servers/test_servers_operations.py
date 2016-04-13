@@ -1,41 +1,34 @@
 import testtools
 from oslo_log import log
 import netaddr
-from tempest.common import fixed_network
-from six import moves
 import base64
+from six import moves
 
-from tempest.api.compute import base
-from tempest.api.compute.servers.test_attach_interfaces import AttachInterfacesTestJSON
-from tempest.api.compute.servers.test_availability_zone import AZV2TestJSON
-from tempest.api.compute.servers.test_create_server import ServersTestJSON as CreateServersTestJSON
-from tempest.api.compute.servers.test_delete_server import DeleteServersTestJSON
-from tempest.api.compute.servers.test_delete_server import DeleteServersAdminTestJSON
-from tempest.api.compute.servers.test_disk_config import ServerDiskConfigTestJSON
-from tempest.api.compute.servers.test_instance_actions import InstanceActionsTestJSON
-from tempest.api.compute.servers.test_instance_actions_negative import InstanceActionsNegativeTestJSON
-from tempest.api.compute.servers.test_list_server_filters import ListServerFiltersTestJSON
-from tempest.api.compute.servers.test_list_servers_negative import ListServersNegativeTestJSON
-from tempest.api.compute.servers.test_multiple_create import MultipleCreateTestJSON
-from tempest.api.compute.servers.test_multiple_create_negative import MultipleCreateNegativeTestJSON
-from tempest.api.compute.servers.test_server_actions import ServerActionsTestJSON
-from tempest.api.compute.servers.test_server_addresses import ServerAddressesTestJSON
-from tempest.api.compute.servers.test_server_addresses_negative import ServerAddressesNegativeTestJSON
-from tempest.api.compute.servers.test_server_metadata import ServerMetadataTestJSON
-from tempest.api.compute.servers.test_server_metadata_negative import ServerMetadataNegativeTestJSON
-from tempest.api.compute.servers.test_server_password import ServerPasswordTestJSON
-from tempest.api.compute.servers.test_server_personality import ServerPersonalityTestJSON
-from tempest.api.compute.servers.test_server_rescue import ServerRescueTestJSON
-from tempest.api.compute.servers.test_server_rescue_negative import ServerRescueNegativeTestJSON
-from tempest.api.compute.servers.test_servers import ServersTestJSON
-from tempest.api.compute.servers.test_servers_negative import ServersNegativeTestJSON
-from tempest.api.compute.servers.test_virtual_interfaces import VirtualInterfacesTestJSON
-from tempest.api.compute.servers.test_virtual_interfaces_negative import VirtualInterfacesNegativeTestJSON
+import tempest.api.compute.servers.test_attach_interfaces as test_attach_interfaces
+import tempest.api.compute.servers.test_availability_zone as test_availability_zone
+import tempest.api.compute.servers.test_create_server as test_create_server
+import tempest.api.compute.servers.test_delete_server as test_delete_server
+import tempest.api.compute.servers.test_instance_actions as test_instance_actions
+import tempest.api.compute.servers.test_instance_actions_negative as test_instance_actions_negative
+import tempest.api.compute.servers.test_list_server_filters as test_list_server_filters
+import tempest.api.compute.servers.test_list_servers_negative as test_list_servers_negative
+import tempest.api.compute.servers.test_multiple_create as test_multiple_create
+import tempest.api.compute.servers.test_multiple_create_negative as test_multiple_create_negative
+import tempest.api.compute.servers.test_server_actions as test_server_actions
+import tempest.api.compute.servers.test_server_addresses as test_server_addresses
+import tempest.api.compute.servers.test_server_addresses_negative as test_server_addresses_negative
+import tempest.api.compute.servers.test_server_metadata as test_server_metadata
+import tempest.api.compute.servers.test_server_metadata_negative as test_server_metadata_negative
+import tempest.api.compute.servers.test_server_password as test_server_password
+import tempest.api.compute.servers.test_server_personality as test_server_personality
+import tempest.api.compute.servers.test_servers as test_servers
+import tempest.api.compute.servers.test_servers_negative as test_servers_negative
+import tempest.api.compute.servers.test_virtual_interfaces_negative as test_virtual_interfaces_negative
 from tempest.common.utils import data_utils
 from tempest.common.utils.linux import remote_client
 from tempest.common import waiters
+from tempest.common import fixed_network
 from tempest.lib import exceptions as lib_exc
-from tempest.lib import decorators
 from tempest import test
 from tempest import config
 
@@ -43,7 +36,7 @@ CONF = config.CONF
 
 LOG = log.getLogger(__name__)
 
-class HybridAttachInterfacesVCloudTestJSON(AttachInterfacesTestJSON):
+class HybridAttachInterfacesVCloudTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
     """Test attach interfaces"""
 
     def _create_server_get_interfaces(self):
@@ -55,7 +48,7 @@ class HybridAttachInterfacesVCloudTestJSON(AttachInterfacesTestJSON):
         ifs[0]['port_state'] = body['port_state']
         return server, ifs
 
-class HybridAttachInterfacesAWSTestJSON(AttachInterfacesTestJSON):
+class HybridAttachInterfacesAWSTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
     """Test attach interfaces"""
 
     def _create_server_get_interfaces(self):
@@ -67,16 +60,16 @@ class HybridAttachInterfacesAWSTestJSON(AttachInterfacesTestJSON):
         ifs[0]['port_state'] = body['port_state']
         return server, ifs
 
-class HybridAZV2TestJSON(AZV2TestJSON):
+class HybridAZV2TestJSON(test_availability_zone.AZV2TestJSON):
     """Test AZ"""
 
-class HybridCreateVCloudServersTestJSON(CreateServersTestJSON):
+class HybridCreateVCloudServersTestJSON(test_create_server.ServersTestJSON):
     """Test create servers"""
 
     @classmethod
     def resource_setup(cls):
         cls.set_validation_resources()
-        super(CreateServersTestJSON, cls).resource_setup()
+        super(test_create_server.ServersTestJSON, cls).resource_setup()
         cls.meta = {'hello': 'world'}
         cls.accessIPv4 = '1.1.1.1'
         cls.accessIPv6 = '0000:0000:0000:0000:0000:babe:220.12.22.2'
@@ -213,13 +206,13 @@ class HybridCreateVCloudServersTestJSON(CreateServersTestJSON):
         for address, network in zip(addr, networks):
             self.assertIn(address, network)
 
-class HybridCreateAwsServersTestJSON(CreateServersTestJSON):
+class HybridCreateAwsServersTestJSON(test_create_server.ServersTestJSON):
     """Test create servers"""
 
     @classmethod
     def resource_setup(cls):
         cls.set_validation_resources()
-        super(CreateServersTestJSON, cls).resource_setup()
+        super(test_create_server.ServersTestJSON, cls).resource_setup()
         cls.meta = {'hello': 'world'}
         cls.accessIPv4 = '1.1.1.1'
         cls.accessIPv6 = '0000:0000:0000:0000:0000:babe:220.12.22.2'
@@ -342,7 +335,7 @@ class HybridCreateAwsServersTestJSON(CreateServersTestJSON):
         for address, network in zip(addr, networks):
             self.assertIn(address, network)
 
-class HybridDeleteVCloudServersTestJSON(DeleteServersTestJSON):
+class HybridDeleteVCloudServersTestJSON(test_delete_server.DeleteServersTestJSON):
     """Test delete server"""
 
     @test.idempotent_id('9e6e0c87-3352-42f7-9faf-5d6210dbd159')
@@ -451,7 +444,7 @@ class HybridDeleteVCloudServersTestJSON(DeleteServersTestJSON):
         waiters.wait_for_volume_status(volumes_client,
                                        volume['id'], 'available')
 
-class HybridDeleteAwsServersTestJSON(DeleteServersTestJSON):
+class HybridDeleteAwsServersTestJSON(test_delete_server.DeleteServersTestJSON):
     """Test delete server"""
 
     @test.idempotent_id('9e6e0c87-3352-42f7-9faf-5d6210dbd159')
@@ -559,7 +552,7 @@ class HybridDeleteAwsServersTestJSON(DeleteServersTestJSON):
         waiters.wait_for_volume_status(volumes_client,
                                        volume['id'], 'available')
 
-class HybridDeleteVCloudServersAdminTestJSON(DeleteServersAdminTestJSON):
+class HybridDeleteVCloudServersAdminTestJSON(test_delete_server.DeleteServersAdminTestJSON):
     """Test delete admin servers"""
 
     @test.idempotent_id('99774678-e072-49d1-9d2a-49a59bc56063')
@@ -582,7 +575,7 @@ class HybridDeleteVCloudServersAdminTestJSON(DeleteServersAdminTestJSON):
         self.admin_client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.servers_client, server['id'])
 
-class HybridDeleteAwsServersAdminTestJSON(DeleteServersAdminTestJSON):
+class HybridDeleteAwsServersAdminTestJSON(test_delete_server.DeleteServersAdminTestJSON):
     """Test delete admin servers"""
 
     @test.idempotent_id('99774678-e072-49d1-9d2a-49a59bc56063')
@@ -605,50 +598,50 @@ class HybridDeleteAwsServersAdminTestJSON(DeleteServersAdminTestJSON):
         self.admin_client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.servers_client, server['id'])
 
-class HybridVCloudInstanceActionsTestJSON(InstanceActionsTestJSON):
+class HybridVCloudInstanceActionsTestJSON(test_instance_actions.InstanceActionsTestJSON):
     """Test instance action"""
 
     @classmethod
     def resource_setup(cls):
-        super(InstanceActionsTestJSON, cls).resource_setup()
+        super(test_instance_actions.InstanceActionsTestJSON, cls).resource_setup()
         server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
         cls.request_id = server.response['x-compute-request-id']
         cls.server_id = server['id']
 
-class HybridAwsInstanceActionsTestJSON(InstanceActionsTestJSON):
+class HybridAwsInstanceActionsTestJSON(test_instance_actions.InstanceActionsTestJSON):
     """Test instance action"""
 
     @classmethod
     def resource_setup(cls):
-        super(InstanceActionsTestJSON, cls).resource_setup()
+        super(test_instance_actions.InstanceActionsTestJSON, cls).resource_setup()
         server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
         cls.request_id = server.response['x-compute-request-id']
         cls.server_id = server['id']
 
-class HybridVCloudInstanceActionsNegativeTestJSON(InstanceActionsNegativeTestJSON):
+class HybridVCloudInstanceActionsNegativeTestJSON(test_instance_actions_negative.InstanceActionsNegativeTestJSON):
     """Test instance negative action"""
 
     @classmethod
     def resource_setup(cls):
-        super(InstanceActionsNegativeTestJSON, cls).resource_setup()
+        super(test_instance_actions_negative.InstanceActionsNegativeTestJSON, cls).resource_setup()
         server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
         cls.server_id = server['id']
 
-class HybridAwsInstanceActionsNegativeTestJSON(InstanceActionsNegativeTestJSON):
+class HybridAwsInstanceActionsNegativeTestJSON(test_instance_actions_negative.InstanceActionsNegativeTestJSON):
     """Test instance negative action"""
 
     @classmethod
     def resource_setup(cls):
-        super(InstanceActionsNegativeTestJSON, cls).resource_setup()
+        super(test_instance_actions_negative.InstanceActionsNegativeTestJSON, cls).resource_setup()
         server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
         cls.server_id = server['id']
 
-class HybridListServerFiltersTestJSON(ListServerFiltersTestJSON):
+class HybridListServerFiltersTestJSON(test_list_server_filters.ListServerFiltersTestJSON):
     """Test list server filters"""
 
     @classmethod
     def resource_setup(cls):
-        super(ListServerFiltersTestJSON, cls).resource_setup()
+        super(test_list_server_filters.ListServerFiltersTestJSON, cls).resource_setup()
 
         # Check to see if the alternate image ref actually exists...
         images_client = cls.compute_images_client
@@ -699,12 +692,12 @@ class HybridListServerFiltersTestJSON(ListServerFiltersTestJSON):
                                         wait_until='ACTIVE',
                                         availability_zone=CONF.compute.default_availability_zone)
 
-class HybridListServersNegativeTestJSON(ListServersNegativeTestJSON):
+class HybridListServersNegativeTestJSON(test_list_servers_negative.ListServersNegativeTestJSON):
     """Test list servers negative"""
 
     @classmethod
     def resource_setup(cls):
-        super(ListServersNegativeTestJSON, cls).resource_setup()
+        super(test_list_servers_negative.ListServersNegativeTestJSON, cls).resource_setup()
 
         # The following servers are created for use
         # by the test methods in this class. These
@@ -726,7 +719,7 @@ class HybridListServersNegativeTestJSON(ListServersNegativeTestJSON):
                                             ignore_error=True)
         cls.deleted_fixtures.append(srv)
 
-class HybridMultipleCreateVCloudTestJSON(MultipleCreateTestJSON):
+class HybridMultipleCreateVCloudTestJSON(test_multiple_create.MultipleCreateTestJSON):
     """Test multiple create servers"""
 
     def _create_multiple_servers(self, name=None, wait_until=None, **kwargs):
@@ -740,7 +733,7 @@ class HybridMultipleCreateVCloudTestJSON(MultipleCreateTestJSON):
 
         return body
 
-class HybridMultipleCreateAwsTestJSON(MultipleCreateTestJSON):
+class HybridMultipleCreateAwsTestJSON(test_multiple_create.MultipleCreateTestJSON):
     """Test multiple create servers"""
 
     def _create_multiple_servers(self, name=None, wait_until=None, **kwargs):
@@ -754,7 +747,7 @@ class HybridMultipleCreateAwsTestJSON(MultipleCreateTestJSON):
 
         return body
 
-class HybridMultipleCreateVCloudNegativeTestJSON(MultipleCreateNegativeTestJSON):
+class HybridMultipleCreateVCloudNegativeTestJSON(test_multiple_create_negative.MultipleCreateNegativeTestJSON):
     """Test multiple create negative"""
 
     def _create_multiple_servers(self, name=None, wait_until=None, **kwargs):
@@ -765,7 +758,7 @@ class HybridMultipleCreateVCloudNegativeTestJSON(MultipleCreateNegativeTestJSON)
 
         return body
 
-class HybridMultipleCreateAwsNegativeTestJSON(MultipleCreateNegativeTestJSON):
+class HybridMultipleCreateAwsNegativeTestJSON(test_multiple_create_negative.MultipleCreateNegativeTestJSON):
     """Test multiple create negative"""
 
     def _create_multiple_servers(self, name=None, wait_until=None, **kwargs):
@@ -776,13 +769,13 @@ class HybridMultipleCreateAwsNegativeTestJSON(MultipleCreateNegativeTestJSON):
 
         return body
 
-class HybridVCloudServerActionsTestJSON(ServerActionsTestJSON):
+class HybridVCloudServerActionsTestJSON(test_server_actions.ServerActionsTestJSON):
     """Test server actions"""
 
     def setUp(self):
         # NOTE(afazekas): Normally we use the same server with all test cases,
         # but if it has an issue, we build a new one
-        super(ServerActionsTestJSON, self).setUp()
+        super(test_server_actions.ServerActionsTestJSON, self).setUp()
         # Check if the server is in a clean state after test
         try:
             waiters.wait_for_server_status(self.client,
@@ -798,6 +791,7 @@ class HybridVCloudServerActionsTestJSON(ServerActionsTestJSON):
             # Rebuild server if something happened to it during a test
             self.__class__.server_id = self.rebuild_server(
                 self.server_id, validatable=True)
+
     @classmethod
     def rebuild_server(cls, server_id, validatable=False, **kwargs):
         # Destroy an existing server and creates a new one
@@ -1004,13 +998,13 @@ class HybridVCloudServerActionsTestJSON(ServerActionsTestJSON):
         self.client.start_server(self.server_id)
         waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
 
-class HybridAwsServerActionsTestJSON(ServerActionsTestJSON):
+class HybridAwsServerActionsTestJSON(test_server_actions.ServerActionsTestJSON):
     """Test server actions"""
 
     def setUp(self):
         # NOTE(afazekas): Normally we use the same server with all test cases,
         # but if it has an issue, we build a new one
-        super(ServerActionsTestJSON, self).setUp()
+        super(test_server_actions.ServerActionsTestJSON, self).setUp()
         # Check if the server is in a clean state after test
         try:
             waiters.wait_for_server_status(self.client,
@@ -1232,66 +1226,66 @@ class HybridAwsServerActionsTestJSON(ServerActionsTestJSON):
         self.client.start_server(self.server_id)
         waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
 
-class HybridServerAddressesTestJSON(ServerAddressesTestJSON):
+class HybridServerAddressesTestJSON(test_server_addresses.ServerAddressesTestJSON):
     """Test server address"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServerAddressesTestJSON, cls).resource_setup()
+        super(test_server_addresses.ServerAddressesTestJSON, cls).resource_setup()
 
         cls.server = cls.create_test_server(wait_until='ACTIVE',
                                             availability_zone=CONF.compute.default_availability_zone)
 
-class HybridServerAddressesNegativeTestJSON(ServerAddressesNegativeTestJSON):
+class HybridServerAddressesNegativeTestJSON(test_server_addresses_negative.ServerAddressesNegativeTestJSON):
     """Test server address negative"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServerAddressesNegativeTestJSON, cls).resource_setup()
+        super(test_server_addresses_negative.ServerAddressesNegativeTestJSON, cls).resource_setup()
         cls.server = cls.create_test_server(wait_until='ACTIVE',
                                             availability_zone=CONF.compute.default_availability_zone)
 
-class HybridServerMetadataTestJSON(ServerMetadataTestJSON):
+class HybridServerMetadataTestJSON(test_server_metadata.ServerMetadataTestJSON):
     """Test server metadata"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServerMetadataTestJSON, cls).resource_setup()
+        super(test_server_metadata.ServerMetadataTestJSON, cls).resource_setup()
         server = cls.create_test_server(metadata={}, wait_until='ACTIVE',
                                         availability_zone=CONF.compute.default_availability_zone)
         cls.server_id = server['id']
 
-class HybridServerMetadataNegativeTestJSON(ServerMetadataNegativeTestJSON):
+class HybridServerMetadataNegativeTestJSON(test_server_metadata_negative.ServerMetadataNegativeTestJSON):
     """Test server metadata negative"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServerMetadataNegativeTestJSON, cls).resource_setup()
+        super(test_server_metadata_negative.ServerMetadataNegativeTestJSON, cls).resource_setup()
         cls.tenant_id = cls.client.tenant_id
         server = cls.create_test_server(metadata={}, wait_until='ACTIVE',
                                         availability_zone=CONF.compute.default_availability_zone)
 
         cls.server_id = server['id']
 
-class HybridVCloudServerPasswordTestJSON(ServerPasswordTestJSON):
+class HybridVCloudServerPasswordTestJSON(test_server_password.ServerPasswordTestJSON):
     """Test server password"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServerPasswordTestJSON, cls).resource_setup()
+        super(test_server_password.ServerPasswordTestJSON, cls).resource_setup()
         cls.server = cls.create_test_server(wait_until="ACTIVE",
                                             availability_zone=CONF.compute.vcloud_availability_zone)
 
-class HybridAwsServerPasswordTestJSON(ServerPasswordTestJSON):
+class HybridAwsServerPasswordTestJSON(test_server_password.ServerPasswordTestJSON):
     """Test server password"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServerPasswordTestJSON, cls).resource_setup()
+        super(test_server_password.ServerPasswordTestJSON, cls).resource_setup()
         cls.server = cls.create_test_server(wait_until="ACTIVE",
                                             availability_zone=CONF.compute.aws_availability_zone)
 
-class HybridVCloudServerPersonalityTestJSON(ServerPersonalityTestJSON):
+class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPersonalityTestJSON):
     """Test server personality"""
 
     @test.idempotent_id('3cfe87fd-115b-4a02-b942-7dc36a337fdf')
@@ -1384,7 +1378,7 @@ class HybridVCloudServerPersonalityTestJSON(ServerPersonalityTestJSON):
                                  linux_client.exec_command(
                                      'sudo cat %s' % i['path']))
 
-class HybridAwsServerPersonalityTestJSON(ServerPersonalityTestJSON):
+class HybridAwsServerPersonalityTestJSON(test_server_personality.ServerPersonalityTestJSON):
     """Test server personality"""
 
     @test.idempotent_id('3cfe87fd-115b-4a02-b942-7dc36a337fdf')
@@ -1477,7 +1471,7 @@ class HybridAwsServerPersonalityTestJSON(ServerPersonalityTestJSON):
                                  linux_client.exec_command(
                                      'sudo cat %s' % i['path']))
 
-class HybridVCloudServersTestJSON(ServersTestJSON):
+class HybridVCloudServersTestJSON(test_servers.ServersTestJSON):
     """Test servers"""
 
     @test.idempotent_id('b92d5ec7-b1dd-44a2-87e4-45e888c46ef0')
@@ -1586,7 +1580,7 @@ class HybridVCloudServersTestJSON(ServersTestJSON):
         server = self.client.show_server(server['id'])['server']
         self.assertEqual('2001:2001::3', server['accessIPv6'])
 
-class HybridAwsServersTestJSON(ServersTestJSON):
+class HybridAwsServersTestJSON(test_servers.ServersTestJSON):
     """Test servers"""
 
     @test.idempotent_id('b92d5ec7-b1dd-44a2-87e4-45e888c46ef0')
@@ -1695,12 +1689,12 @@ class HybridAwsServersTestJSON(ServersTestJSON):
         server = self.client.show_server(server['id'])['server']
         self.assertEqual('2001:2001::3', server['accessIPv6'])
 
-class HybridVCloudServersNegativeTestJSON(ServersNegativeTestJSON):
+class HybridVCloudServersNegativeTestJSON(test_servers_negative.ServersNegativeTestJSON):
     """Test servers negative"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServersNegativeTestJSON, cls).resource_setup()
+        super(test_servers_negative.ServersNegativeTestJSON, cls).resource_setup()
         server = cls.create_test_server(wait_until='ACTIVE',
                                         availability_zone=CONF.compute.vcloud_availability_zone)
         cls.server_id = server['id']
@@ -1725,15 +1719,35 @@ class HybridVCloudServersNegativeTestJSON(ServersNegativeTestJSON):
             **kwargs)
         return server['id']
 
-class HybridAwsServersNegativeTestJSON(ServersNegativeTestJSON):
+class HybridAwsServersNegativeTestJSON(test_servers_negative.ServersNegativeTestJSON):
     """Test servers negative"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServersNegativeTestJSON, cls).resource_setup()
+        super(test_servers_negative.ServersNegativeTestJSON, cls).resource_setup()
         server = cls.create_test_server(wait_until='ACTIVE',
                                         availability_zone=CONF.compute.aws_availability_zone)
         cls.server_id = server['id']
 
-class HybridVirtualInterfacesNegativeTestJSON(VirtualInterfacesNegativeTestJSON):
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.aws_availability_zone,
+            **kwargs)
+        return server['id']
+
+class HybridVirtualInterfacesNegativeTestJSON(test_virtual_interfaces_negative.VirtualInterfacesNegativeTestJSON):
     """Test virtual interfaces negative"""
