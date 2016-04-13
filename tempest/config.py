@@ -727,6 +727,9 @@ VolumeGroup = [
     cfg.IntOpt('volume_size',
                default=1,
                help='Default size in GB for volumes created by volumes tests'),
+    cfg.StrOpt('availability_zone',
+               default='',
+               help='Available zone of volume'),
 ]
 
 volume_feature_group = cfg.OptGroup(name='volume-feature-enabled',
