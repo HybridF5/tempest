@@ -81,7 +81,10 @@ class BaseVolumesClient(rest_client.RestClient):
         """
         if 'size' not in kwargs:
             kwargs['size'] = self.default_volume_size
-        kwargs['availability_zone'] = CONF.volume.get('availability_zone')
+        if 'availablility_zone' not in kwargs:
+            kwargs['availability_zone'] = CONF.volume.get('availability_zone')
+        if 'volume_type' not in kwargs:
+            kwargs['volume_type'] = CONF.volume.get('volume_type')
         post_body = json.dumps({'volume': kwargs})
         resp, body = self.post('volumes', post_body)
         body = json.loads(body)

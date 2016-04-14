@@ -730,6 +730,9 @@ VolumeGroup = [
     cfg.StrOpt('availability_zone',
                default='',
                help='Available zone of volume'),
+    cfg.StrOpt('volume_type',
+               default=None,
+               help='volume type of volume'),
 ]
 
 volume_feature_group = cfg.OptGroup(name='volume-feature-enabled',
