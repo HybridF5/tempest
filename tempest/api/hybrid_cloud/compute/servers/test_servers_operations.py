@@ -1308,7 +1308,7 @@ class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPerson
                 self.validation_resources['keypair']['private_key'])
             self.assertEqual(file_contents,
                              linux_client.exec_command(
-                                 'sudo cat %s' % file_path))
+                                 'cat %s' % file_path))
 
     @test.idempotent_id('128966d8-71fc-443c-8cab-08e24114ecc9')
     def test_rebuild_server_with_personality(self):
@@ -1376,7 +1376,7 @@ class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPerson
             for i in person:
                 self.assertEqual(base64.b64decode(i['contents']),
                                  linux_client.exec_command(
-                                     'sudo cat %s' % i['path']))
+                                     'cat %s' % i['path']))
 
 class HybridAwsServerPersonalityTestJSON(test_server_personality.ServerPersonalityTestJSON):
     """Test server personality"""
@@ -1401,7 +1401,7 @@ class HybridAwsServerPersonalityTestJSON(test_server_personality.ServerPersonali
                 self.validation_resources['keypair']['private_key'])
             self.assertEqual(file_contents,
                              linux_client.exec_command(
-                                 'sudo cat %s' % file_path))
+                                 'cat %s' % file_path))
 
     @test.idempotent_id('128966d8-71fc-443c-8cab-08e24114ecc9')
     def test_rebuild_server_with_personality(self):
@@ -1469,7 +1469,7 @@ class HybridAwsServerPersonalityTestJSON(test_server_personality.ServerPersonali
             for i in person:
                 self.assertEqual(base64.b64decode(i['contents']),
                                  linux_client.exec_command(
-                                     'sudo cat %s' % i['path']))
+                                     'cat %s' % i['path']))
 
 class HybridVCloudServersTestJSON(test_servers.ServersTestJSON):
     """Test servers"""
