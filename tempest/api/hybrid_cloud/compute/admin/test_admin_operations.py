@@ -612,5 +612,14 @@ class HybridTenantUsagesTestJSON(TenantUsagesTest.TenantUsagesTestJSON):
         cls.start = cls._parse_strtime(now - datetime.timedelta(days=1))
         cls.end = cls._parse_strtime(now + datetime.timedelta(days=1))
 
+    @testtools.skip('Do not support with origin policy')
+    @test.idempotent_id('9d00a412-b40e-4fd9-8eba-97b496316116')
+    def test_get_usage_tenant_with_non_admin_user(self):
+        # Get usage for a specific tenant with non admin user
+        tenant_usage = self.call_until_valid(
+            self.client.show_tenant_usage, VALID_WAIT,
+            self.tenant_id, start=self.start, end=self.end)['tenant_usage']
+        self.assertEqual(len(tenant_usage), 8)
+
 class HybridTenantUsagesNegativeTestJSON(TenantUsagesNegativeTest.TenantUsagesNegativeTestJSON):
     """Tests TenantUsage API. require admin privileges."""
