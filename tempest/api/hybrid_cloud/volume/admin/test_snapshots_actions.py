@@ -17,6 +17,7 @@ from tempest.api.hybrid_cloud.volume import base
 from tempest.common.utils import data_utils
 from tempest import config
 from tempest import test
+import time
 
 CONF = config.CONF
 
@@ -77,6 +78,8 @@ class SnapshotsActionsV2Test(base.BaseVolumeAdminTest):
     def _create_reset_and_force_delete_temp_snapshot(self, status=None):
         # Create snapshot, reset snapshot status,
         # and force delete temp snapshot
+        # SnapshotCreationPerVolumeRateExceeded
+        time.sleep(15)
         temp_snapshot = self.create_snapshot(volume_id=self.volume['id'])
         if status:
             self.admin_snapshots_client.\
