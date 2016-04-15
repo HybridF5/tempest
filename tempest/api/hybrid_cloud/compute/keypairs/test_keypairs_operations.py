@@ -2,9 +2,9 @@ import testtools
 from oslo_log import log
 
 from tempest.api.compute import base
-from tempest.api.compute.flavors.test_keypairs import KeyPairsV2TestJSON
-from tempest.api.compute.flavors.test_keypairs_negative import KeyPairsNegativeTestJSON
-from tempest.api.compute.flavors.test_keypairs_v22 import KeyPairsV22TestJSON
+import tempest.api.compute.keypairs.test_keypairs as KeyPairsV2Test
+import tempest.api.compute.keypairs.test_keypairs_negative as KeyPairsNegativeTest
+import tempest.api.compute.keypairs.test_keypairs_v22 as KeyPairsV22Test
 from tempest.common.utils import data_utils
 from tempest.common import waiters
 from tempest.lib import exceptions as lib_exc
@@ -16,11 +16,11 @@ CONF = config.CONF
 
 LOG = log.getLogger(__name__)
 
-class HybridKeyPairsV2TestJSON(KeyPairsV2TestJSON):
+class HybridKeyPairsV2TestJSON(KeyPairsV2Test.KeyPairsV2TestJSON):
     """Test Keypairs v2"""
 
-class HybridKeyPairsNegativeTestJSON(KeyPairsNegativeTestJSON):
+class HybridKeyPairsNegativeTestJSON(KeyPairsNegativeTest.KeyPairsNegativeTestJSON):
     """Test Keypairs negative"""
 
-class HybridKeyPairsV22TestJSON(KeyPairsV22TestJSON):
+class HybridKeyPairsV22TestJSON(KeyPairsV22Test.KeyPairsV22TestJSON):
     """Test Keypairs v22"""

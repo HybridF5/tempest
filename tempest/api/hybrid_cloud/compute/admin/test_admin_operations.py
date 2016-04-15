@@ -1,21 +1,47 @@
+import datetime
 import testtools
 from oslo_log import log
 
 from tempest.api.compute import base
-from tempest.api.compute.admin.test_availability_zone import AZAdminV2TestJSON
-from tempest.api.compute.admin.test_availability_zone_negative import AZAdminNegativeTestJSON
-from tempest.api.compute.admin.test_hosts import HostsAdminTestJSON
-from tempest.api.compute.admin.test_hosts_negative import HostsAdminNegativeTestJSON
-from tempest.api.compute.admin.test_hypervisor import HypervisorAdminTestJSON
-from tempest.api.compute.admin.test_hypervisor_negative import HypervisorAdminNegativeTestJSON
-from tempest.api.compute.admin.test_quotas import QuotasAdminTestJSON
-from tempest.api.compute.admin.test_quotas_negative import QuotasAdminNegativeTestJSON
-from tempest.api.compute.admin.test_servers import ServersAdminTestJSON
-from tempest.api.compute.admin.test_servers_negative import ServersAdminNegativeTestJSON
-from tempest.api.compute.admin.test_services import ServicesAdminTestJSON
-from tempest.api.compute.admin.test_services_negative import ServicesAdminNegativeTestJSON
-from tempest.api.compute.admin.test_simple_tenant_usage import TenantUsagesTestJSON
-from tempest.api.compute.admin.test_simple_tenant_usage_negative import TenantUsagesNegativeTestJSON
+from tempest.common import compute
+from tempest.common import fixed_network
+
+import tempest.api.compute.admin.test_agents as AgentsAdminTest
+import tempest.api.compute.admin.test_aggregates as AggregatesAdminTest
+import tempest.api.compute.admin.test_aggregates_negative as AggregatesAdminNegativeTest
+import tempest.api.compute.admin.test_availability_zone as AZAdminV2Test
+import tempest.api.compute.admin.test_availability_zone_negative as AZAdminNegativeTest
+import tempest.api.compute.admin.test_baremetal_nodes as BaremetalNodesAdminTest
+import tempest.api.compute.admin.test_fixed_ips as FixedIPsTest
+import tempest.api.compute.admin.test_fixed_ips_negative as FixedIPsNegativeTest
+import tempest.api.compute.admin.test_flavors as FlavorsAdminTest
+import tempest.api.compute.admin.test_flavors_access as FlavorsAccessTest
+import tempest.api.compute.admin.test_flavors_access_negative as FlavorsAccessNegativeTest
+import tempest.api.compute.admin.test_flavors_extra_specs as FlavorsExtraSpecsTest
+import tempest.api.compute.admin.test_flavors_extra_specs_negative as FlavorsExtraSpecsNegativeTest
+import tempest.api.compute.admin.test_floating_ips_bulk as FloatingIPsBulkAdminTest
+import tempest.api.compute.admin.test_hosts as HostsAdminTest
+import tempest.api.compute.admin.test_hosts_negative as HostsAdminNegativeTest
+import tempest.api.compute.admin.test_hypervisor as HypervisorAdminTest
+import tempest.api.compute.admin.test_hypervisor_negative as HypervisorAdminNegativeTest
+import tempest.api.compute.admin.test_instance_usage_audit_log as InstanceUsageAuditLogTest
+import tempest.api.compute.admin.test_instance_usage_audit_log_negative as InstanceUsageAuditLogNegativeTest
+import tempest.api.compute.admin.test_keypairs_v210 as KeyPairsV210Test
+import tempest.api.compute.admin.test_live_migration as LiveBlockMigrationTest
+import tempest.api.compute.admin.test_migrations as MigrationsAdminTest
+import tempest.api.compute.admin.test_networks as NetworksTest
+import tempest.api.compute.admin.test_quotas as QuotaClassesAdminTest
+import tempest.api.compute.admin.test_quotas as QuotasAdminTest
+import tempest.api.compute.admin.test_quotas_negative as QuotasAdminNegativeTest
+import tempest.api.compute.admin.test_security_group_default_rules as SecurityGroupDefaultRulesTest
+import tempest.api.compute.admin.test_security_groups as SecurityGroupsTestAdmin
+import tempest.api.compute.admin.test_servers as ServersAdminTest
+import tempest.api.compute.admin.test_servers_negative as ServersAdminNegativeTest
+import tempest.api.compute.admin.test_servers_on_multinodes as ServersOnMultiNodesTest
+import tempest.api.compute.admin.test_services as ServicesAdminTest
+import tempest.api.compute.admin.test_services_negative as ServicesAdminNegativeTest
+import tempest.api.compute.admin.test_simple_tenant_usage as TenantUsagesTest
+import tempest.api.compute.admin.test_simple_tenant_usage_negative as TenantUsagesNegativeTest
 from tempest.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.lib import decorators
@@ -26,16 +52,65 @@ CONF = config.CONF
 
 LOG = log.getLogger(__name__)
 
-class HybridAZAdminV2TestJSON(AZAdminV2TestJSON):
+class HybridAgentsAdminTestJSON(AgentsAdminTest.AgentsAdminTestJSON):
+    """Tests Agents API"""
+
+class HybridAggregatesAdminTestJSON(AggregatesAdminTest.AggregatesAdminTestJSON):
+    """Tests Aggregates API that require admin privileges"""
+
+class HybridAggregatesAdminNegativeTestJSON(AggregatesAdminNegativeTest.AggregatesAdminNegativeTestJSON):
+    """Tests Aggregates API that require admin privileges"""
+
+class HybridAZAdminV2TestJSON(AZAdminV2Test.AZAdminV2TestJSON):
     """Tests Availability Zone API List"""
 
-class HybridAZAdminNegativeTestJSON(AZAdminNegativeTestJSON):
+class HybridAZAdminNegativeTestJSON(AZAdminNegativeTest.AZAdminNegativeTestJSON):
     """Tests Availability Zone API List"""
 
-class HybridHostsAdminTestJSON(HostsAdminTestJSON):
+class HybridBaremetalNodesAdminTestJSON(BaremetalNodesAdminTest.BaremetalNodesAdminTestJSON):
+    """Tests Baremetal API"""
+
+class HybridFixedIPsTestJson(FixedIPsTest.FixedIPsTestJson):
+    """Tests FixedIPs API"""
+
+class HybridFixedIPsNegativeTestJson(FixedIPsNegativeTest.FixedIPsNegativeTestJson):
+    """Tests FixedIPs API"""
+
+class HybridFlavorsAdminTestJSON(FlavorsAdminTest.FlavorsAdminTestJSON):
+    """Tests Flavors API Create and Delete that require admin privileges"""
+
+class HybridFlavorsAccessTestJSON(FlavorsAccessTest.FlavorsAccessTestJSON):
+    """Tests Flavor Access API extension.
+
+    Add and remove Flavor Access require admin privileges.
+    """
+class HybridFlavorsAccessNegativeTestJSON(FlavorsAccessNegativeTest.FlavorsAccessNegativeTestJSON):
+    """Tests Flavor Access API extension.
+
+    Add and remove Flavor Access require admin privileges.
+    """
+class HybridFlavorsExtraSpecsTestJSON(FlavorsExtraSpecsTest.FlavorsExtraSpecsTestJSON):
+    """Tests Flavor Extra Spec API extension.
+
+    SET, UNSET, UPDATE Flavor Extra specs require admin privileges.
+    GET Flavor Extra specs can be performed even by without admin privileges.
+    """
+class HybridFlavorsExtraSpecsNegativeTestJSON(FlavorsExtraSpecsNegativeTest.FlavorsExtraSpecsNegativeTestJSON):
+    """Negative Tests Flavor Extra Spec API extension.
+
+    SET, UNSET, UPDATE Flavor Extra specs require admin privileges.
+    """
+class HybridFloatingIPsBulkAdminTestJSON(FloatingIPsBulkAdminTest.FloatingIPsBulkAdminTestJSON):
+    """Tests Floating IPs Bulk APIs that require admin privileges.
+
+    API documentation - http://docs.openstack.org/api/openstack-compute/2/
+    content/ext-os-floating-ips-bulk.html
+    """
+
+class HybridHostsAdminTestJSON(HostsAdminTest.HostsAdminTestJSON):
     """Tests hosts API using admin privileges."""
 
-class HybridHostsAdminNegativeTestJSON(HostsAdminNegativeTestJSON):
+class HybridHostsAdminNegativeTestJSON(HostsAdminNegativeTest.HostsAdminNegativeTestJSON):
     """Tests hosts API using admin privileges."""
 
     @testtools.skip('Do not support host operation')
@@ -159,24 +234,55 @@ class HybridHostsAdminNegativeTestJSON(HostsAdminNegativeTestJSON):
                           self.non_admin_client.reboot_host,
                           hostname)
 
-class HybridHypervisorAdminTestJSON(HypervisorAdminTestJSON):
+class HybridHypervisorAdminTestJSON(HypervisorAdminTest.HypervisorAdminTestJSON):
     """Tests Hypervisors API that require admin privileges"""
 
-class HybridHypervisorAdminNegativeTestJSON(HypervisorAdminNegativeTestJSON):
+class HybridHypervisorAdminNegativeTestJSON(HypervisorAdminNegativeTest.HypervisorAdminNegativeTestJSON):
     """Tests Hypervisors API that require admin privileges"""
 
-class HybridQuotasAdminTestJSON(QuotasAdminTestJSON):
+class HybridInstanceUsageAuditLogTestJSON(InstanceUsageAuditLogTest.InstanceUsageAuditLogTestJSON):
+    """Tests InstanceUsageAuditLogTestJSON API"""
+
+class HybridInstanceUsageAuditLogNegativeTestJSON(InstanceUsageAuditLogNegativeTest.InstanceUsageAuditLogNegativeTestJSON):
+    """Tests InstanceUsageAuditLogTestJSON API"""
+
+class HybridKeyPairsV210TestJSON(KeyPairsV210Test.KeyPairsV210TestJSON):
+    """Tests KeyPairsV210TestJSON API"""
+
+class HybridLiveBlockMigrationTestJSON(LiveBlockMigrationTest.LiveBlockMigrationTestJSON):
+    """Tests LiveBlockMigrationTestJSON API"""
+
+class HybridMigrationsAdminTest(MigrationsAdminTest.MigrationsAdminTest):
+    """Tests MigrationsAdminTest API"""
+
+class HybridNetworksTest(NetworksTest.NetworksTest):
+    """Tests Nova Networks API that usually requires admin privileges.
+
+    API docs:
+    http://developer.openstack.org/api-ref-compute-v2-ext.html#ext-os-networks
+    """
+
+class HybridQuotaClassesAdminTestJSON(QuotaClassesAdminTest.QuotaClassesAdminTestJSON):
+    """Tests the os-quota-class-sets API to update default quotas."""
+    
+class HybridQuotasAdminTestJSON(QuotasAdminTest.QuotasAdminTestJSON):
     """Test Quotas API that require admin privileges"""
 
-class HybridQuotasAdminNegativeTestJSON(QuotasAdminNegativeTestJSON):
+class HybridQuotasAdminNegativeTestJSON(QuotasAdminNegativeTest.QuotasAdminNegativeTestJSON):
     """Test Quotas API that require admin privileges"""
 
-class HybridServersAdminTestJSON(ServersAdminTestJSON):
+class HybridSecurityGroupDefaultRulesTest(SecurityGroupDefaultRulesTest.SecurityGroupDefaultRulesTest):
+    """Test SecurityGroupDefaultRulesTest API"""
+
+class HybridSecurityGroupsTestAdminJSON(SecurityGroupsTestAdmin.SecurityGroupsTestAdminJSON):
+    """Test HybridSecurityGroupsTestAdminJSON API"""
+
+class HybridServersAdminTestJSON(ServersAdminTest.ServersAdminTestJSON):
     """Tests Servers API using admin privileges"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServersAdminTestJSON, cls).resource_setup()
+        super(ServersAdminTest.ServersAdminTestJSON, cls).resource_setup()
 
         cls.s1_name = data_utils.rand_name('server')
         server = cls.create_test_server(name=cls.s1_name,
@@ -189,6 +295,32 @@ class HybridServersAdminTestJSON(ServersAdminTestJSON):
                                         wait_until='ACTIVE',
                                         availability_zone=CONF.compute.default_availability_zone)
         cls.s2_id = server['id']
+
+    @test.idempotent_id('86c7a8f7-50cf-43a9-9bac-5b985317134f')
+    def test_list_servers_filter_by_exist_host(self):
+        # Filter the list of servers by existent host
+        name = data_utils.rand_name('server')
+        network = self.get_tenant_network()
+        network_kwargs = fixed_network.set_networks_kwarg(network)
+        # We need to create the server as an admin, so we can't use
+        # self.create_test_server() here as this method creates the server
+        # in the "primary" (i.e non-admin) tenant.
+        test_server, _ = compute.create_test_server(
+            self.os_adm, wait_until="ACTIVE", availability_zone=CONF.compute.default_availability_zone,
+            name=name, **network_kwargs)
+        self.addCleanup(self.client.delete_server, test_server['id'])
+        server = self.client.show_server(test_server['id'])['server']
+        self.assertEqual(server['status'], 'ACTIVE')
+        hostname = server[self._host_key]
+        params = {'host': hostname}
+        body = self.client.list_servers(**params)
+        servers = body['servers']
+        nonexistent_params = {'host': 'nonexistent_host'}
+        nonexistent_body = self.client.list_servers(**nonexistent_params)
+        nonexistent_servers = nonexistent_body['servers']
+        self.assertIn(test_server['id'], map(lambda x: x['id'], servers))
+        self.assertNotIn(test_server['id'],
+                         map(lambda x: x['id'], nonexistent_servers))
 
     @test.idempotent_id('7a1323b4-a6a2-497a-96cb-76c07b945c71')
     def test_reset_network_inject_network_info(self):
@@ -208,12 +340,12 @@ class HybridServersAdminTestJSON(ServersAdminTestJSON):
         self.create_test_server(scheduler_hints=hints,
                                 wait_until='ACTIVE')
 
-class HybridServersAdminNegativeTestJSON(ServersAdminNegativeTestJSON):
+class HybridServersAdminNegativeTestJSON(ServersAdminNegativeTest.ServersAdminNegativeTestJSON):
     """Tests Servers API using admin privileges"""
 
     @classmethod
     def resource_setup(cls):
-        super(ServersAdminTestJSON, cls).resource_setup()
+        super(ServersAdminNegativeTest.ServersAdminNegativeTestJSON, cls).resource_setup()
         cls.tenant_id = cls.client.tenant_id
 
         cls.s1_name = data_utils.rand_name('server')
@@ -318,14 +450,29 @@ class HybridServersAdminNegativeTestJSON(ServersAdminNegativeTestJSON):
                           self.client.migrate_server,
                           server_id)
 
-class HybridServicesAdminTestJSON(ServicesAdminTestJSON):
+class HybridServersOnMultiNodesTest(ServersOnMultiNodesTest.ServersOnMultiNodesTest):
+    """Tests ServersOnMultiNodesTest API."""
+
+class HybridServicesAdminTestJSON(ServicesAdminTest.ServicesAdminTestJSON):
     """Tests Services API. List and Enable/Disable require admin privileges."""
 
-class HybridServicesAdminNegativeTestJSON(ServicesAdminNegativeTestJSON):
+class HybridServicesAdminNegativeTestJSON(ServicesAdminNegativeTest.ServicesAdminNegativeTestJSON):
     """Tests Services API. List and Enable/Disable require admin privileges."""
 
-class HybridTenantUsagesTestJSON(TenantUsagesTestJSON):
+class HybridTenantUsagesTestJSON(TenantUsagesTest.TenantUsagesTestJSON):
     """Tests TenantUsage API. require admin privileges."""
+    @classmethod
+    def resource_setup(cls):
+        super(TenantUsagesTest.TenantUsagesTestJSON, cls).resource_setup()
+        cls.tenant_id = cls.client.tenant_id
 
-class HybridTenantUsagesNegativeTestJSON(TenantUsagesNegativeTestJSON):
+        # Create a server in the demo tenant
+        cls.create_test_server(wait_until='ACTIVE',
+			       availability_zone=CONF.compute.default_availability_zone)
+
+        now = datetime.datetime.now()
+        cls.start = cls._parse_strtime(now - datetime.timedelta(days=1))
+        cls.end = cls._parse_strtime(now + datetime.timedelta(days=1))
+
+class HybridTenantUsagesNegativeTestJSON(TenantUsagesNegativeTest.TenantUsagesNegativeTestJSON):
     """Tests TenantUsage API. require admin privileges."""
