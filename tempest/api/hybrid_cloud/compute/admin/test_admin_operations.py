@@ -57,6 +57,26 @@ class HybridAgentsAdminTestJSON(AgentsAdminTest.AgentsAdminTestJSON):
 
 class HybridAggregatesAdminTestJSON(AggregatesAdminTest.AggregatesAdminTestJSON):
     """Tests Aggregates API that require admin privileges"""
+    @testtools.skip('Do not support now')    
+    @test.idempotent_id('96be03c7-570d-409c-90f8-e4db3c646996')
+    def test_aggregate_add_host_create_server_with_az(self):
+        # Add a host to the given aggregate and create a server.
+        self.useFixture(fixtures.LockFixture('availability_zone'))
+        aggregate_name = data_utils.rand_name(self.aggregate_name_prefix)
+        az_name = data_utils.rand_name(self.az_name_prefix)
+        aggregate = self.client.create_aggregate(
+            name=aggregate_name, availability_zone=az_name)['aggregate']
+        self.addCleanup(self.client.delete_aggregate, aggregate['id'])
+        self.client.add_host(aggregate['id'], host=self.host)
+        self.addCleanup(self.client.remove_host, aggregate['id'],
+                        host=self.host)
+        server_name = data_utils.rand_name('test_server')
+        admin_servers_client = self.os_adm.servers_client
+        server = self.create_test_server(name=server_name,
+                                         availability_zone=az_name,
+                                         wait_until='ACTIVE')
+        body = admin_servers_client.show_server(server['id'])['server']
+        self.assertEqual(self.host, body[self._host_key])
 
 class HybridAggregatesAdminNegativeTestJSON(AggregatesAdminNegativeTest.AggregatesAdminNegativeTestJSON):
     """Tests Aggregates API that require admin privileges"""
@@ -78,6 +98,47 @@ class HybridFixedIPsNegativeTestJson(FixedIPsNegativeTest.FixedIPsNegativeTestJs
 
 class HybridFlavorsAdminTestJSON(FlavorsAdminTest.FlavorsAdminTestJSON):
     """Tests Flavors API Create and Delete that require admin privileges"""
+    @testtools.skip('Do not support now')
+    @test.idempotent_id('63dc64e6-2e79-4fdf-868f-85500d308d66')
+    def test_create_list_flavor_without_extra_data(self):
+        # Create a flavor and ensure it is listed
+        # This operation requires the user to have 'admin' role
+
+        def verify_flavor_response_extension(flavor):
+            # check some extensions for the flavor create/show/detail response
+            self.assertEqual(flavor['swap'], '')
+            self.assertEqual(int(flavor['rxtx_factor']), 1)
+            self.assertEqual(int(flavor['OS-FLV-EXT-DATA:ephemeral']), 0)
+            self.assertEqual(flavor['os-flavor-access:is_public'], True)
+
+        flavor_name = data_utils.rand_name(self.flavor_name_prefix)
+        new_flavor_id = data_utils.rand_int_id(start=1000)
+
+        # Create the flavor
+        flavor = self.client.create_flavor(name=flavor_name,
+                                           ram=self.ram, vcpus=self.vcpus,
+                                           disk=self.disk,
+                                           id=new_flavor_id)['flavor']
+        self.addCleanup(self.flavor_clean_up, flavor['id'])
+        self.assertEqual(flavor['name'], flavor_name)
+        self.assertEqual(flavor['ram'], self.ram)
+        self.assertEqual(flavor['vcpus'], self.vcpus)
+        self.assertEqual(flavor['disk'], self.disk)
+        self.assertEqual(int(flavor['id']), new_flavor_id)
+        verify_flavor_response_extension(flavor)
+
+        # Verify flavor is retrieved
+        flavor = self.client.show_flavor(new_flavor_id)['flavor']
+        self.assertEqual(flavor['name'], flavor_name)
+        verify_flavor_response_extension(flavor)
+
+        # Check if flavor is present in list
+        flavors = self.user_client.list_flavors(detail=True)['flavors']
+        for flavor in flavors:
+            if flavor['name'] == flavor_name:
+                verify_flavor_response_extension(flavor)
+                flag = True
+        self.assertTrue(flag)
 
 class HybridFlavorsAccessTestJSON(FlavorsAccessTest.FlavorsAccessTestJSON):
     """Tests Flavor Access API extension.
@@ -95,11 +156,43 @@ class HybridFlavorsExtraSpecsTestJSON(FlavorsExtraSpecsTest.FlavorsExtraSpecsTes
     SET, UNSET, UPDATE Flavor Extra specs require admin privileges.
     GET Flavor Extra specs can be performed even by without admin privileges.
     """
+    @test.idempotent_id('a99dad88-ae1c-4fba-aeb4-32f898218bd0')
+    def test_flavor_non_admin_get_all_keys(self):
+        specs = {"key1": "value1", "key2": "value2"}
+        self.client.set_flavor_extra_spec(self.flavor['id'], **specs)
+        body = (self.flavors_client.list_flavor_extra_specs(self.flavor['id'])
+                ['extra_specs'])
+
+        for key in specs:
+            self.assertEqual(body[key], specs[key])
+
+    @testtools.skip('Do not support now')
+    @test.idempotent_id('12805a7f-39a3-4042-b989-701d5cad9c90')
+    def test_flavor_non_admin_get_specific_key(self):
+            body = self.client.set_flavor_extra_spec(self.flavor['id'],
+                                                     key1="value1",
+                                                     key2="value2")['extra_specs']
+            self.assertEqual(body['key1'], 'value1')
+            self.assertIn('key2', body)
+            body = self.flavors_client.show_flavor_extra_spec(
+                self.flavor['id'], 'key1')
+            self.assertEqual(body['key1'], 'value1')
+            self.assertNotIn('key2', body)
+
 class HybridFlavorsExtraSpecsNegativeTestJSON(FlavorsExtraSpecsNegativeTest.FlavorsExtraSpecsNegativeTestJSON):
     """Negative Tests Flavor Extra Spec API extension.
 
     SET, UNSET, UPDATE Flavor Extra specs require admin privileges.
     """
+    @testtools.skip('Do not support now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('329a7be3-54b2-48be-8052-bf2ce4afd898')
+    def test_flavor_get_nonexistent_key(self):
+        self.assertRaises(lib_exc.NotFound,
+                          self.flavors_client.show_flavor_extra_spec,
+                          self.flavor['id'],
+                          "nonexistent_key")
+
 class HybridFloatingIPsBulkAdminTestJSON(FloatingIPsBulkAdminTest.FloatingIPsBulkAdminTestJSON):
     """Tests Floating IPs Bulk APIs that require admin privileges.
 
@@ -276,6 +369,51 @@ class HybridSecurityGroupDefaultRulesTest(SecurityGroupDefaultRulesTest.Security
 
 class HybridSecurityGroupsTestAdminJSON(SecurityGroupsTestAdmin.SecurityGroupsTestAdminJSON):
     """Test HybridSecurityGroupsTestAdminJSON API"""
+    @testtools.skip('Do not support with neutron')
+    @test.idempotent_id('49667619-5af9-4c63-ab5d-2cfdd1c8f7f1')
+    @test.services('network')
+    def test_list_security_groups_list_all_tenants_filter(self):
+        # Admin can list security groups of all tenants
+        # List of all security groups created
+        security_group_list = []
+        # Create two security groups for a non-admin tenant
+        for i in range(2):
+            name = data_utils.rand_name('securitygroup')
+            description = data_utils.rand_name('description')
+            securitygroup = self.client.create_security_group(
+                name=name, description=description)['security_group']
+            self.addCleanup(self._delete_security_group,
+                            securitygroup['id'], admin=False)
+            security_group_list.append(securitygroup)
+
+        client_tenant_id = securitygroup['tenant_id']
+        # Create two security groups for admin tenant
+        for i in range(2):
+            name = data_utils.rand_name('securitygroup')
+            description = data_utils.rand_name('description')
+            adm_securitygroup = self.adm_client.create_security_group(
+                name=name, description=description)['security_group']
+            self.addCleanup(self._delete_security_group,
+                            adm_securitygroup['id'])
+            security_group_list.append(adm_securitygroup)
+
+        # Fetch all security groups based on 'all_tenants' search filter
+        fetched_list = self.adm_client.list_security_groups(
+            all_tenants='true')['security_groups']
+        sec_group_id_list = map(lambda sg: sg['id'], fetched_list)
+        # Now check if all created Security Groups are present in fetched list
+        for sec_group in security_group_list:
+            self.assertIn(sec_group['id'], sec_group_id_list)
+
+        # Fetch all security groups for non-admin user with 'all_tenants'
+        # search filter
+        fetched_list = (self.client.list_security_groups(all_tenants='true')
+                        ['security_groups'])
+        # Now check if all created Security Groups are present in fetched list
+        for sec_group in fetched_list:
+            self.assertEqual(sec_group['tenant_id'], client_tenant_id,
+                             "Failed to get all security groups for "
+                             "non admin user.")
 
 class HybridServersAdminTestJSON(ServersAdminTest.ServersAdminTestJSON):
     """Tests Servers API using admin privileges"""
