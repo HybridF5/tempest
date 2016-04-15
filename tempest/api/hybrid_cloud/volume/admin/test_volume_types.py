@@ -37,7 +37,7 @@ class VolumeTypesV2Test(base.BaseVolumeAdminTest):
         body = self.volume_types_client.list_volume_types()['volume_types']
         self.assertIsInstance(body, list)
 
-    #@testtools.skip("Create a volume type in cascading doesn't create in cascaded.")
+    @testtools.skip("Create a volume type in cascading doesn't create in cascaded.")
     @test.idempotent_id('c03cc62c-f4e9-4623-91ec-64ce2f9c1260')
     def test_volume_crud_with_volume_type_and_extra_specs(self):
         # Create/update/get/delete volume with volume_type and extra spec.
