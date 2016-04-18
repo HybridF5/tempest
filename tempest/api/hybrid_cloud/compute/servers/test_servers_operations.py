@@ -48,17 +48,17 @@ class HybridAttachInterfacesVCloudTestJSON(test_attach_interfaces.AttachInterfac
         ifs[0]['port_state'] = body['port_state']
         return server, ifs
 
-class HybridAttachInterfacesAWSTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
-    """Test attach interfaces"""
-
-    def _create_server_get_interfaces(self):
-        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
-        ifs = (self.client.list_interfaces(server['id'])
-               ['interfaceAttachments'])
-        body = self.wait_for_interface_status(
-            server['id'], ifs[0]['port_id'], 'ACTIVE')
-        ifs[0]['port_state'] = body['port_state']
-        return server, ifs
+#class HybridAttachInterfacesAWSTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
+#    """Test attach interfaces"""
+#
+#    def _create_server_get_interfaces(self):
+#        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
+#        ifs = (self.client.list_interfaces(server['id'])
+#               ['interfaceAttachments'])
+#        body = self.wait_for_interface_status(
+#            server['id'], ifs[0]['port_id'], 'ACTIVE')
+#        ifs[0]['port_state'] = body['port_state']
+#        return server, ifs
 
 class HybridAZV2TestJSON(test_availability_zone.AZV2TestJSON):
     """Test AZ"""
