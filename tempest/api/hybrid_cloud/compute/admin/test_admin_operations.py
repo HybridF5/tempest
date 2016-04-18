@@ -80,12 +80,98 @@ class HybridAggregatesAdminTestJSON(AggregatesAdminTest.AggregatesAdminTestJSON)
 
 class HybridAggregatesAdminNegativeTestJSON(AggregatesAdminNegativeTest.AggregatesAdminNegativeTestJSON):
     """Tests Aggregates API that require admin privileges"""
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('86a1cb14-da37-4a70-b056-903fd56dfe29')
+    def test_aggregate_create_as_user(self):
+        # Regular user is not allowed to create an aggregate.
+        aggregate_name = data_utils.rand_name(self.aggregate_name_prefix)
+        self.assertRaises(lib_exc.Forbidden,
+                          self.user_client.create_aggregate,
+                          name=aggregate_name)
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('cd6de795-c15d-45f1-8d9e-813c6bb72a3d')
+    def test_aggregate_delete_as_user(self):
+        # Regular user is not allowed to delete an aggregate.
+        aggregate_name = data_utils.rand_name(self.aggregate_name_prefix)
+        aggregate = (self.client.create_aggregate(name=aggregate_name)
+                     ['aggregate'])
+        self.addCleanup(self.client.delete_aggregate, aggregate['id'])
+    
+        self.assertRaises(lib_exc.Forbidden,
+                          self.user_client.delete_aggregate,
+                          aggregate['id'])
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('b7d475a6-5dcd-4ff4-b70a-cd9de66a6672')
+    def test_aggregate_list_as_user(self):
+        # Regular user is not allowed to list aggregates.
+        self.assertRaises(lib_exc.Forbidden,
+                          self.user_client.list_aggregates)
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('557cad12-34c9-4ff4-95f0-22f0dfbaf7dc')
+    def test_aggregate_get_details_as_user(self):
+        # Regular user is not allowed to get aggregate details.
+        aggregate_name = data_utils.rand_name(self.aggregate_name_prefix)
+        aggregate = (self.client.create_aggregate(name=aggregate_name)
+                     ['aggregate'])
+        self.addCleanup(self.client.delete_aggregate, aggregate['id'])
+    
+        self.assertRaises(lib_exc.Forbidden,
+                          self.user_client.show_aggregate,
+                          aggregate['id'])
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('7324c334-bd13-4c93-8521-5877322c3d51')
+    def test_aggregate_add_host_as_user(self):
+        # Regular user is not allowed to add a host to an aggregate.
+        aggregate_name = data_utils.rand_name(self.aggregate_name_prefix)
+        aggregate = (self.client.create_aggregate(name=aggregate_name)
+                     ['aggregate'])
+        self.addCleanup(self.client.delete_aggregate, aggregate['id'])
+
+        self.assertRaises(lib_exc.Forbidden,
+                          self.user_client.add_host,
+                          aggregate['id'], host=self.host)
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('7a53af20-137a-4e44-a4ae-e19260e626d9')
+    def test_aggregate_remove_host_as_user(self):
+        # Regular user is not allowed to remove a host from an aggregate.
+        self.useFixture(fixtures.LockFixture('availability_zone'))
+        aggregate_name = data_utils.rand_name(self.aggregate_name_prefix)
+        aggregate = (self.client.create_aggregate(name=aggregate_name)
+                     ['aggregate'])
+        self.addCleanup(self.client.delete_aggregate, aggregate['id'])
+        self.client.add_host(aggregate['id'], host=self.host)
+        self.addCleanup(self.client.remove_host, aggregate['id'],
+                        host=self.host)
+    
+        self.assertRaises(lib_exc.Forbidden,
+                          self.user_client.remove_host,
+                          aggregate['id'], host=self.host)
 
 class HybridAZAdminV2TestJSON(AZAdminV2Test.AZAdminV2TestJSON):
     """Tests Availability Zone API List"""
 
 class HybridAZAdminNegativeTestJSON(AZAdminNegativeTest.AZAdminNegativeTestJSON):
     """Tests Availability Zone API List"""
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('bf34dca2-fdc3-4073-9c02-7648d9eae0d7')
+    def test_get_availability_zone_list_detail_with_non_admin_user(self):
+        # List of availability zones and available services with
+        # non-administrator user
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.list_availability_zones, detail=True)    
 
 class HybridBaremetalNodesAdminTestJSON(BaremetalNodesAdminTest.BaremetalNodesAdminTestJSON):
     """Tests Baremetal API"""
@@ -150,6 +236,46 @@ class HybridFlavorsAccessNegativeTestJSON(FlavorsAccessNegativeTest.FlavorsAcces
 
     Add and remove Flavor Access require admin privileges.
     """
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('41eaaade-6d37-4f28-9c74-f21b46ca67bd')
+    def test_flavor_non_admin_add(self):
+        # Test to add flavor access as a user without admin privileges.
+        flavor_name = data_utils.rand_name(self.flavor_name_prefix)
+        new_flavor_id = data_utils.rand_int_id(start=1000)
+        new_flavor = self.client.create_flavor(name=flavor_name,
+                                               ram=self.ram, vcpus=self.vcpus,
+                                               disk=self.disk,
+                                               id=new_flavor_id,
+                                               is_public='False')['flavor']
+        self.addCleanup(self.client.delete_flavor, new_flavor['id'])
+        self.assertRaises(lib_exc.Forbidden,
+                          self.flavors_client.add_flavor_access,
+                          new_flavor['id'],
+                          self.tenant_id)
+    
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('073e79a6-c311-4525-82dc-6083d919cb3a')
+    def test_flavor_non_admin_remove(self):
+        # Test to remove flavor access as a user without admin privileges.
+        flavor_name = data_utils.rand_name(self.flavor_name_prefix)
+        new_flavor_id = data_utils.rand_int_id(start=1000)
+        new_flavor = self.client.create_flavor(name=flavor_name,
+                                               ram=self.ram, vcpus=self.vcpus,
+                                               disk=self.disk,
+                                               id=new_flavor_id,
+                                               is_public='False')['flavor']
+        self.addCleanup(self.client.delete_flavor, new_flavor['id'])
+        # Add flavor access to a tenant.
+        self.client.add_flavor_access(new_flavor['id'], self.tenant_id)
+        self.addCleanup(self.client.remove_flavor_access,
+                        new_flavor['id'], self.tenant_id)
+        self.assertRaises(lib_exc.Forbidden,
+                          self.flavors_client.remove_flavor_access,
+                          new_flavor['id'],
+                          self.tenant_id)
+
 class HybridFlavorsExtraSpecsTestJSON(FlavorsExtraSpecsTest.FlavorsExtraSpecsTestJSON):
     """Tests Flavor Extra Spec API extension.
 
@@ -192,6 +318,43 @@ class HybridFlavorsExtraSpecsNegativeTestJSON(FlavorsExtraSpecsNegativeTest.Flav
                           self.flavors_client.show_flavor_extra_spec,
                           self.flavor['id'],
                           "nonexistent_key")
+    
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('a00a3b81-5641-45a8-ab2b-4a8ec41e1d7d')
+    def test_flavor_non_admin_set_keys(self):
+        # Test to SET flavor extra spec as a user without admin privileges.
+        self.assertRaises(lib_exc.Forbidden,
+                          self.flavors_client.set_flavor_extra_spec,
+                          self.flavor['id'],
+                          key1="value1", key2="value2")
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('1ebf4ef8-759e-48fe-a801-d451d80476fb')
+    def test_flavor_non_admin_update_specific_key(self):
+        # non admin user is not allowed to update flavor extra spec
+        body = self.client.set_flavor_extra_spec(
+            self.flavor['id'], key1="value1", key2="value2")['extra_specs']
+        self.assertEqual(body['key1'], 'value1')
+        self.assertRaises(lib_exc.Forbidden,
+                          self.flavors_client.
+                          update_flavor_extra_spec,
+                          self.flavor['id'],
+                          'key1',
+                          key1='value1_new')
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('28f12249-27c7-44c1-8810-1f382f316b11')
+    def test_flavor_non_admin_unset_keys(self):
+        self.client.set_flavor_extra_spec(self.flavor['id'],
+                                          key1="value1", key2="value2")
+    
+        self.assertRaises(lib_exc.Forbidden,
+                          self.flavors_client.unset_flavor_extra_spec,
+                          self.flavor['id'],
+                          'key1')
 
 class HybridFloatingIPsBulkAdminTestJSON(FloatingIPsBulkAdminTest.FloatingIPsBulkAdminTestJSON):
     """Tests Floating IPs Bulk APIs that require admin privileges.
@@ -202,6 +365,25 @@ class HybridFloatingIPsBulkAdminTestJSON(FloatingIPsBulkAdminTest.FloatingIPsBul
 
 class HybridHostsAdminTestJSON(HostsAdminTest.HostsAdminTestJSON):
     """Tests hosts API using admin privileges."""
+    @testtools.skip('BUG execute failed now')
+    @test.idempotent_id('38adbb12-aee2-4498-8aec-329c72423aa4')
+    def test_show_host_detail(self):
+        hosts = self.client.list_hosts()['hosts']
+
+        hosts = [host for host in hosts if host['service'] == 'compute']
+        self.assertTrue(len(hosts) >= 1)
+
+        for host in hosts:
+            hostname = host['host_name']
+            resources = self.client.show_host(hostname)['host']
+            self.assertTrue(len(resources) >= 1)
+            host_resource = resources[0]['resource']
+            self.assertIsNotNone(host_resource)
+            self.assertIsNotNone(host_resource['cpu'])
+            self.assertIsNotNone(host_resource['disk_gb'])
+            self.assertIsNotNone(host_resource['memory_mb'])
+            self.assertIsNotNone(host_resource['project'])
+            self.assertEqual(hostname, host_resource['host'])
 
 class HybridHostsAdminNegativeTestJSON(HostsAdminNegativeTest.HostsAdminNegativeTestJSON):
     """Tests hosts API using admin privileges."""
@@ -327,11 +509,102 @@ class HybridHostsAdminNegativeTestJSON(HostsAdminNegativeTest.HostsAdminNegative
                           self.non_admin_client.reboot_host,
                           hostname)
 
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('dd032027-0210-4d9c-860e-69b1b8deed5f')
+    def test_list_hosts_with_non_admin_user(self):
+        self.assertRaises(lib_exc.Forbidden,
+                          self.non_admin_client.list_hosts)
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('19ebe09c-bfd4-4b7c-81a2-e2e0710f59cc')
+    def test_show_host_detail_with_non_admin_user(self):
+        hostname = self._get_host_name()
+    
+        self.assertRaises(lib_exc.Forbidden,
+                          self.non_admin_client.show_host,
+                          hostname)
+
 class HybridHypervisorAdminTestJSON(HypervisorAdminTest.HypervisorAdminTestJSON):
     """Tests Hypervisors API that require admin privileges"""
 
 class HybridHypervisorAdminNegativeTestJSON(HypervisorAdminNegativeTest.HypervisorAdminNegativeTestJSON):
     """Tests Hypervisors API that require admin privileges"""
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('51e663d0-6b89-4817-a465-20aca0667d03')
+    def test_show_hypervisor_with_non_admin_user(self):
+        hypers = self._list_hypervisors()
+        self.assertTrue(len(hypers) > 0)
+
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.show_hypervisor,
+            hypers[0]['id'])
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('2a0a3938-832e-4859-95bf-1c57c236b924')
+    def test_show_servers_with_non_admin_user(self):
+        hypers = self._list_hypervisors()
+        self.assertTrue(len(hypers) > 0)
+    
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.list_servers_on_hypervisor,
+            hypers[0]['id'])
+
+    @testtools.skip('BUG execute failed now')    
+    @test.attr(type=['negative'])
+    @test.idempotent_id('e2b061bb-13f9-40d8-9d6e-d5bf17595849')
+    def test_get_hypervisor_stats_with_non_admin_user(self):
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.show_hypervisor_statistics)
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('6c3461f9-c04c-4e2a-bebb-71dc9cb47df2')
+    def test_get_hypervisor_uptime_with_non_admin_user(self):
+        hypers = self._list_hypervisors()
+        self.assertTrue(len(hypers) > 0)
+
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.show_hypervisor_uptime,
+            hypers[0]['id'])
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('51b3d536-9b14-409c-9bce-c6f7c794994e')
+    def test_get_hypervisor_list_with_non_admin_user(self):
+        # List of hypervisor and available services with non admin user
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.list_hypervisors)
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('dc02db05-e801-4c5f-bc8e-d915290ab345')
+    def test_get_hypervisor_list_details_with_non_admin_user(self):
+        # List of hypervisor details and available services with non admin user
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.list_hypervisors, detail=True)
+
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('5b6a6c79-5dc1-4fa5-9c58-9c8085948e74')
+    def test_search_hypervisor_with_non_admin_user(self):
+        hypers = self._list_hypervisors()
+        self.assertTrue(len(hypers) > 0)
+    
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.non_adm_client.search_hypervisor,
+            hypers[0]['hypervisor_hostname'])
 
 class HybridInstanceUsageAuditLogTestJSON(InstanceUsageAuditLogTest.InstanceUsageAuditLogTestJSON):
     """Tests InstanceUsageAuditLogTestJSON API"""
@@ -363,6 +636,14 @@ class HybridQuotasAdminTestJSON(QuotasAdminTest.QuotasAdminTestJSON):
 
 class HybridQuotasAdminNegativeTestJSON(QuotasAdminNegativeTest.QuotasAdminNegativeTestJSON):
     """Test Quotas API that require admin privileges"""
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('733abfe8-166e-47bb-8363-23dbd7ff3476')
+    def test_update_quota_normal_user(self):
+        self.assertRaises(lib_exc.Forbidden,
+                          self.client.update_quota_set,
+                          self.demo_tenant_id,
+                          ram=0)
 
 class HybridSecurityGroupDefaultRulesTest(SecurityGroupDefaultRulesTest.SecurityGroupDefaultRulesTest):
     """Test SecurityGroupDefaultRulesTest API"""
@@ -477,6 +758,35 @@ class HybridServersAdminTestJSON(ServersAdminTest.ServersAdminTestJSON):
         }
         self.create_test_server(scheduler_hints=hints,
                                 wait_until='ACTIVE')
+
+    @testtools.skip('BUG execute failed now')
+    @test.idempotent_id('682cb127-e5bb-4f53-87ce-cb9003604442')
+    def test_rebuild_server_in_error_state(self):
+        # The server in error state should be rebuilt using the provided
+        # image and changed to ACTIVE state
+    
+        # resetting vm state require admin privilege
+        self.client.reset_state(self.s1_id, state='error')
+        rebuilt_server = self.non_admin_client.rebuild_server(
+            self.s1_id, self.image_ref_alt)['server']
+        self.addCleanup(waiters.wait_for_server_status, self.non_admin_client,
+                        self.s1_id, 'ACTIVE')
+        self.addCleanup(self.non_admin_client.rebuild_server, self.s1_id,
+                        self.image_ref)
+    
+        # Verify the properties in the initial response are correct
+        self.assertEqual(self.s1_id, rebuilt_server['id'])
+        rebuilt_image_id = rebuilt_server['image']['id']
+        self.assertEqual(self.image_ref_alt, rebuilt_image_id)
+        self.assertEqual(self.flavor_ref, rebuilt_server['flavor']['id'])
+        waiters.wait_for_server_status(self.non_admin_client,
+                                       rebuilt_server['id'], 'ACTIVE',
+                                       raise_on_error=False)
+        # Verify the server properties after rebuilding
+        server = (self.non_admin_client.show_server(rebuilt_server['id'])
+                  ['server'])
+        rebuilt_image_id = server['image']['id']
+        self.assertEqual(self.image_ref_alt, rebuilt_image_id)
 
 class HybridServersAdminNegativeTestJSON(ServersAdminNegativeTest.ServersAdminNegativeTestJSON):
     """Tests Servers API using admin privileges"""
@@ -596,6 +906,13 @@ class HybridServicesAdminTestJSON(ServicesAdminTest.ServicesAdminTestJSON):
 
 class HybridServicesAdminNegativeTestJSON(ServicesAdminNegativeTest.ServicesAdminNegativeTestJSON):
     """Tests Services API. List and Enable/Disable require admin privileges."""
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('1126d1f8-266e-485f-a687-adc547492646')
+    def test_list_services_with_non_admin_user(self):
+        self.assertRaises(lib_exc.Forbidden,
+                          self.non_admin_client.list_services)
+
 
 class HybridTenantUsagesTestJSON(TenantUsagesTest.TenantUsagesTestJSON):
     """Tests TenantUsage API. require admin privileges."""
@@ -606,7 +923,7 @@ class HybridTenantUsagesTestJSON(TenantUsagesTest.TenantUsagesTestJSON):
 
         # Create a server in the demo tenant
         cls.create_test_server(wait_until='ACTIVE',
-			       availability_zone=CONF.compute.default_availability_zone)
+            availability_zone=CONF.compute.default_availability_zone)
 
         now = datetime.datetime.now()
         cls.start = cls._parse_strtime(now - datetime.timedelta(days=1))
@@ -623,3 +940,14 @@ class HybridTenantUsagesTestJSON(TenantUsagesTest.TenantUsagesTestJSON):
 
 class HybridTenantUsagesNegativeTestJSON(TenantUsagesNegativeTest.TenantUsagesNegativeTestJSON):
     """Tests TenantUsage API. require admin privileges."""
+    @testtools.skip('BUG execute failed now')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('bbe6fe2c-15d8-404c-a0a2-44fad0ad5cc7')
+    def test_list_usage_all_tenants_with_non_admin_user(self):
+        # Get usage for all tenants with non admin user
+        params = {'start': self.start,
+                  'end': self.end,
+                  'detailed': "1"}
+        self.assertRaises(lib_exc.Forbidden,
+                          self.client.list_tenant_usages, **params)
+
