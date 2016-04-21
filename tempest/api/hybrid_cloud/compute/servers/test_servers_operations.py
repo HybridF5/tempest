@@ -1318,9 +1318,7 @@ class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPerson
                              linux_client.exec_command(
                                  'cat %s' % file_path))
 
-    #test case failed, so temporarily....
-    #BUG execute failed now
-    """
+    @testtools.skip('BUG execute failed now')
     @test.idempotent_id('128966d8-71fc-443c-8cab-08e24114ecc9')
     def test_rebuild_server_with_personality(self):
         server = self.create_test_server(wait_until='ACTIVE', validatable=True,
@@ -1335,7 +1333,6 @@ class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPerson
         waiters.wait_for_server_status(self.client, server_id, 'ACTIVE')
         self.assertEqual(self.image_ref_alt,
                          rebuilt_server['server']['image']['id'])
-    """
 
     @testtools.skip('BUG execute failed now')
     @test.idempotent_id('176cd8c9-b9e8-48ee-a480-180beab292bf')
