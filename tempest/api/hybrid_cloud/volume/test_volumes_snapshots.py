@@ -10,11 +10,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
 from tempest.api.hybrid_cloud.volume import base
 from tempest.common.utils import data_utils
 from tempest import config
 from tempest import test
+from tempest.common import waiters
 
 CONF = config.CONF
 
@@ -38,7 +38,7 @@ class VolumesV2SnapshotTestJSON(base.BaseVolumeTest):
     def _detach(self, volume_id):
         """Detach volume."""
         self.volumes_client.detach_volume(volume_id)
-        self.volumes_client.wait_for_volume_status(volume_id, 'available')
+        waiters.wait_for_volume_status(self.volumes_client, volume_id, 'available')
 
     def _list_by_param_values_and_assert(self, with_detail=False, **params):
         """list or list_details with given params and validates result."""
@@ -57,7 +57,6 @@ class VolumesV2SnapshotTestJSON(base.BaseVolumeTest):
                       ('details' if with_detail else '', key)
                 self.assertEqual(params[key], snap[key], msg)
 
-    @testtools.skip('BUG execute failed now')
     @test.idempotent_id('b467b54c-07a4-446d-a1cf-651dedcc3ff1')
     @test.services('compute')
     def test_snapshot_create_with_volume_in_use(self):
@@ -72,9 +71,10 @@ class VolumesV2SnapshotTestJSON(base.BaseVolumeTest):
         self.servers_client.attach_volume(
             server['id'], volumeId=self.volume_origin['id'],
             device=mountpoint)
-        self.volumes_client.wait_for_volume_status(self.volume_origin['id'],
-                                                   'in-use')
-        self.addCleanup(self.volumes_client.wait_for_volume_status,
+        waiters.wait_for_volume_status(self.volumes_client, self.volume_origin['id'], 'in-use')
+
+        self.addCleanup(waiters.wait_for_volume_status,
+                        self.volumes_client,
                         self.volume_origin['id'], 'available')
         self.addCleanup(self.servers_client.detach_volume, server['id'],
                         self.volume_origin['id'])
@@ -165,7 +165,6 @@ class VolumesV2SnapshotTestJSON(base.BaseVolumeTest):
                   self.name_field: snapshot[self.name_field]}
         self._list_by_param_values_and_assert(with_detail=True, **params)
 
-    @testtools.skip('BUG execute failed now')
     @test.idempotent_id('677863d1-3142-456d-b6ac-9924f667a7f4')
     def test_volume_from_snapshot(self):
         # Create a temporary snap using wrapper method from base, then
@@ -174,7 +173,7 @@ class VolumesV2SnapshotTestJSON(base.BaseVolumeTest):
         # NOTE(gfidente): size is required also when passing snapshot_id
         volume = self.volumes_client.create_volume(
             snapshot_id=snapshot['id'])['volume']
-        self.volumes_client.wait_for_volume_status(volume['id'], 'available')
+        waiters.wait_for_volume_status(self.volumes_client, volume['id'], 'available')
         self.volumes_client.delete_volume(volume['id'])
         self.volumes_client.wait_for_resource_deletion(volume['id'])
         self.cleanup_snapshot(snapshot)
