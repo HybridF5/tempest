@@ -193,7 +193,6 @@ server_detail['properties']['addresses']['patternProperties'][
 # and some environments return a response without
 # these attributes. So they are not 'required'.
 
-
 get_server = {
     'status_code': [200],
     'response_body': {
