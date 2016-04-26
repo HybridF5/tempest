@@ -611,6 +611,19 @@ class HybridInstanceUsageAuditLogTestJSON(InstanceUsageAuditLogTest.InstanceUsag
 
 class HybridInstanceUsageAuditLogNegativeTestJSON(InstanceUsageAuditLogNegativeTest.InstanceUsageAuditLogNegativeTestJSON):
     """Tests InstanceUsageAuditLogTestJSON API"""
+    @testtools.skip('need fix the config file')
+    @test.attr(type=['negative'])
+    @test.idempotent_id('a9d33178-d2c9-4131-ad3b-f4ca8d0308a2')
+    def test_instance_usage_audit_logs_with_nonadmin_user(self):
+        # the instance_usage_audit_logs API just can be accessed by admin user
+        self.assertRaises(lib_exc.Forbidden,
+                          self.instance_usages_audit_log_client.
+                          list_instance_usage_audit_logs)
+        now = datetime.datetime.now()
+        self.assertRaises(lib_exc.Forbidden,
+                          self.instance_usages_audit_log_client.
+                          show_instance_usage_audit_log,
+                          urllib.quote(now.strftime("%Y-%m-%d %H:%M:%S")))
 
 class HybridKeyPairsV210TestJSON(KeyPairsV210Test.KeyPairsV210TestJSON):
     """Tests KeyPairsV210TestJSON API"""
@@ -644,6 +657,60 @@ class HybridQuotasAdminNegativeTestJSON(QuotasAdminNegativeTest.QuotasAdminNegat
                           self.client.update_quota_set,
                           self.demo_tenant_id,
                           ram=0)
+
+    @test.attr(type=['negative'])
+    @test.idempotent_id('91058876-9947-4807-9f22-f6eb17140d9b')
+    def test_create_server_when_cpu_quota_is_full(self):
+        # Disallow server creation when tenant's vcpu quota is full
+        quota_set = (self.adm_client.show_quota_set(self.demo_tenant_id)
+                     ['quota_set'])
+        default_vcpu_quota = quota_set['cores']
+        vcpu_quota = 0  # Set the quota to zero to conserve resources
+
+        self.adm_client.update_quota_set(self.demo_tenant_id,
+                                         force=True,
+                                         cores=vcpu_quota)
+
+        self.addCleanup(self.adm_client.update_quota_set, self.demo_tenant_id,
+                        cores=default_vcpu_quota)
+        self.assertRaises((lib_exc.Forbidden, lib_exc.OverLimit),
+                          self.create_test_server, availability_zone=CONF.compute.aws_availability_zone)
+
+    @test.attr(type=['negative'])
+    @test.idempotent_id('6fdd7012-584d-4327-a61c-49122e0d5864')
+    def test_create_server_when_memory_quota_is_full(self):
+        # Disallow server creation when tenant's memory quota is full
+        quota_set = (self.adm_client.show_quota_set(self.demo_tenant_id)
+                     ['quota_set'])
+        default_mem_quota = quota_set['ram']
+        mem_quota = 0  # Set the quota to zero to conserve resources
+
+        self.adm_client.update_quota_set(self.demo_tenant_id,
+                                         force=True,
+                                         ram=mem_quota)
+
+        self.addCleanup(self.adm_client.update_quota_set, self.demo_tenant_id,
+                        ram=default_mem_quota)
+        self.assertRaises((lib_exc.Forbidden, lib_exc.OverLimit),
+                          self.create_test_server, availability_zone=CONF.compute.aws_availability_zone)
+
+    @test.attr(type=['negative'])
+    @test.idempotent_id('7c6be468-0274-449a-81c3-ac1c32ee0161')
+    def test_create_server_when_instances_quota_is_full(self):
+        # Once instances quota limit is reached, disallow server creation
+        quota_set = (self.adm_client.show_quota_set(self.demo_tenant_id)
+                     ['quota_set'])
+        default_instances_quota = quota_set['instances']
+        instances_quota = 0  # Set quota to zero to disallow server creation
+
+        self.adm_client.update_quota_set(self.demo_tenant_id,
+                                         force=True,
+                                         instances=instances_quota)
+        self.addCleanup(self.adm_client.update_quota_set, self.demo_tenant_id,
+                        instances=default_instances_quota)
+        self.assertRaises((lib_exc.Forbidden, lib_exc.OverLimit),
+                          self.create_test_server, availability_zone=CONF.compute.aws_availability_zone)
+
 
 class HybridSecurityGroupDefaultRulesTest(SecurityGroupDefaultRulesTest.SecurityGroupDefaultRulesTest):
     """Test SecurityGroupDefaultRulesTest API"""
