@@ -23,6 +23,8 @@ from tempest.lib.api_schema.response.compute.v2_1 import servers as schema
 from tempest.lib.common import rest_client
 from tempest.lib.services.compute import base_compute_client
 
+from tempest import config
+CONF = config.CONF
 
 class ServersClient(base_compute_client.BaseComputeClient):
 

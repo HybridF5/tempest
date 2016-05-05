@@ -16,6 +16,7 @@
 from tempest.common import compute
 from tempest.common.utils import data_utils
 from tempest import config
+from tempest.common import waiters
 from tempest import exceptions
 from tempest.lib import exceptions as lib_exc
 import tempest.test
@@ -106,7 +107,7 @@ class BaseVolumeTest(tempest.test.BaseTestCase):
         volume = cls.volumes_client.create_volume(**kwargs)['volume']
 
         cls.volumes.append(volume)
-        cls.volumes_client.wait_for_volume_status(volume['id'], 'available')
+        waiters.wait_for_volume_status(cls.volumes_client, volume['id'], 'available')
         return volume
 
     @classmethod
@@ -115,8 +116,7 @@ class BaseVolumeTest(tempest.test.BaseTestCase):
         snapshot = cls.snapshots_client.create_snapshot(
             volume_id=volume_id, **kwargs)['snapshot']
         cls.snapshots.append(snapshot)
-        cls.snapshots_client.wait_for_snapshot_status(snapshot['id'],
-                                                      'available')
+        waiters.wait_for_snapshot_status(cls.snapshots_client, snapshot['id'], 'available')
         return snapshot
 
     # NOTE(afazekas): these create_* and clean_* could be defined
