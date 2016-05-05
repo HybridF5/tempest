@@ -36,32 +36,30 @@ CONF = config.CONF
 
 LOG = log.getLogger(__name__)
 
-#cacasing openstack can't update the status of attached port, result in test fail.
-#BUG execute failed now
-#class HybridAttachInterfacesVCloudTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
-#    """Test attach interfaces"""
-#
-#    def _create_server_get_interfaces(self):
-#        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
-#        ifs = (self.client.list_interfaces(server['id'])
-#               ['interfaceAttachments'])
-#        body = self.wait_for_interface_status(
-#            server['id'], ifs[0]['port_id'], 'ACTIVE')
-#        ifs[0]['port_state'] = body['port_state']
-#        return server, ifs
-#
+class HybridAttachInterfacesVCloudTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
+    """Test attach interfaces"""
 
-#class HybridAttachInterfacesAWSTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
-#    """Test attach interfaces"""
-#
-#    def _create_server_get_interfaces(self):
-#        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
-#        ifs = (self.client.list_interfaces(server['id'])
-#               ['interfaceAttachments'])
-#        body = self.wait_for_interface_status(
-#            server['id'], ifs[0]['port_id'], 'ACTIVE')
-#        ifs[0]['port_state'] = body['port_state']
-#        return server, ifs
+    def _create_server_get_interfaces(self):
+        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
+        ifs = (self.client.list_interfaces(server['id'])
+               ['interfaceAttachments'])
+        body = self.wait_for_interface_status(
+            server['id'], ifs[0]['port_id'], 'ACTIVE')
+        ifs[0]['port_state'] = body['port_state']
+        return server, ifs
+
+
+class HybridAttachInterfacesAWSTestJSON(test_attach_interfaces.AttachInterfacesTestJSON):
+    """Test attach interfaces"""
+
+    def _create_server_get_interfaces(self):
+        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
+        ifs = (self.client.list_interfaces(server['id'])
+               ['interfaceAttachments'])
+        body = self.wait_for_interface_status(
+            server['id'], ifs[0]['port_id'], 'ACTIVE')
+        ifs[0]['port_state'] = body['port_state']
+        return server, ifs
 
 class HybridAZV2TestJSON(test_availability_zone.AZV2TestJSON):
     """Test AZ"""
@@ -92,7 +90,6 @@ class HybridCreateVCloudServersTestJSON(test_create_server.ServersTestJSON):
         cls.server = (cls.client.show_server(cls.server_initial['id'])
                       ['server'])
 
-    @testtools.skip('BUG execute failed now')
     @test.attr(type='smoke')
     @test.idempotent_id('5de47127-9977-400a-936f-abcfbec1218f')
     def test_verify_server_details(self):
@@ -236,6 +233,20 @@ class HybridCreateAwsServersTestJSON(test_create_server.ServersTestJSON):
         cls.server = (cls.client.show_server(cls.server_initial['id'])
                       ['server'])
 
+    @test.attr(type='smoke')
+    @test.idempotent_id('5de47127-9977-400a-936f-abcfbec1218f')
+    def test_verify_server_details(self):
+        # Verify the specified server attributes are set correctly
+        self.assertEqual(self.accessIPv4, self.server['accessIPv4'])
+        # NOTE(maurosr): See http://tools.ietf.org/html/rfc5952 (section 4)
+        # Here we compare directly with the canonicalized format.
+        self.assertEqual(self.server['accessIPv6'],
+                         str(netaddr.IPAddress(self.accessIPv6)))
+        self.assertEqual(self.name, self.server['name'])
+        self.assertEqual(self.image_ref, self.server['image']['id'])
+        self.assertEqual(self.flavor_ref, self.server['flavor']['id'])
+        self.assertTrue(cmp(self.server['metadata'], self.meta) > 0)
+
     @testtools.skip('Do not support host operation')
     @test.idempotent_id('ed20d3fb-9d1f-4329-b160-543fbd5d9811')
     def test_create_server_with_scheduler_hint_group(self):
@@ -365,7 +376,6 @@ class HybridDeleteVCloudServersTestJSON(test_delete_server.DeleteServersTestJSON
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
-    @testtools.skip('Do not support host operation')
     @test.idempotent_id('943bd6e8-4d7a-4904-be83-7a6cc2d4213b')
     @testtools.skipUnless(CONF.compute_feature_enabled.pause,
                           'Pause is not available.')
@@ -377,7 +387,6 @@ class HybridDeleteVCloudServersTestJSON(test_delete_server.DeleteServersTestJSON
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
-    @testtools.skip('Do not support host operation')
     @test.idempotent_id('1f82ebd3-8253-4f4e-b93f-de9b7df56d8b')
     @testtools.skipUnless(CONF.compute_feature_enabled.suspend,
                           'Suspend is not available.')
@@ -389,7 +398,6 @@ class HybridDeleteVCloudServersTestJSON(test_delete_server.DeleteServersTestJSON
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
-    @testtools.skip('Do not support host operation')
     @test.idempotent_id('bb0cb402-09dd-4947-b6e5-5e7e1cfa61ad')
     @testtools.skipUnless(CONF.compute_feature_enabled.shelve,
                           'Shelve is not available.')
@@ -409,7 +417,6 @@ class HybridDeleteVCloudServersTestJSON(test_delete_server.DeleteServersTestJSON
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
-    @testtools.skip('Do not support host operation')
     @test.idempotent_id('ab0c38b4-cdd8-49d3-9b92-0cb898723c01')
     @testtools.skipIf(not CONF.compute_feature_enabled.resize,
                       'Resize not available.')
@@ -773,465 +780,320 @@ class HybridMultipleCreateAwsNegativeTestJSON(test_multiple_create_negative.Mult
 
         return body
 
-#too many test case failed, so temporarily....
-#BUG execute failed now
-#class HybridVCloudServerActionsTestJSON(test_server_actions.ServerActionsTestJSON):
-#    """Test server actions"""
-#
-#    def setUp(self):
-#        # NOTE(afazekas): Normally we use the same server with all test cases,
-#        # but if it has an issue, we build a new one
-#        super(test_server_actions.ServerActionsTestJSON, self).setUp()
-#        # Check if the server is in a clean state after test
-#        try:
-#            waiters.wait_for_server_status(self.client,
-#                                           self.server_id, 'ACTIVE')
-#        except lib_exc.NotFound:
-#            # The server was deleted by previous test, create a new one
-#            server = self.create_test_server(
-#                validatable=True,
-#                wait_until='ACTIVE',
-#                availability_zone=CONF.compute.vcloud_availability_zone)
-#            self.__class__.server_id = server['id']
-#        except Exception:
-#            # Rebuild server if something happened to it during a test
-#            self.__class__.server_id = self.rebuild_server(
-#                self.server_id, validatable=True)
-#
-#    @classmethod
-#    def rebuild_server(cls, server_id, validatable=False, **kwargs):
-#        # Destroy an existing server and creates a new one
-#        if server_id:
-#            try:
-#                cls.servers_client.delete_server(server_id)
-#                waiters.wait_for_server_termination(cls.servers_client,
-#                                                    server_id)
-#            except Exception:
-#                LOG.exception('Failed to delete server %s' % server_id)
-#
-#        cls.password = data_utils.rand_password()
-#        server = cls.create_test_server(
-#            validatable,
-#            wait_until='ACTIVE',
-#            adminPass=cls.password,
-#            availability_zone=CONF.compute.vcloud_availability_zone,
-#            **kwargs)
-#        return server['id']
-#
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('1499262a-9328-4eda-9068-db1ac57498d2')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
-#                          'Resize not available.')
-#    def test_resize_server_confirm(self):
-#        self._test_resize_server_confirm(stop=False)
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('138b131d-66df-48c9-a171-64f45eb92962')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
-#                          'Resize not available.')
-#    def test_resize_server_confirm_from_stopped(self):
-#        self._test_resize_server_confirm(stop=True)
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('c03aab19-adb1-44f5-917d-c419577e9e68')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
-#                          'Resize not available.')
-#    def test_resize_server_revert(self):
-#        # The server's RAM and disk space should return to its original
-#        # values after a resize is reverted
-#
-#        self.client.resize_server(self.server_id, self.flavor_ref_alt)
-#        waiters.wait_for_server_status(self.client, self.server_id,
-#                                       'VERIFY_RESIZE')
-#
-#        self.client.revert_resize_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#        server = self.client.show_server(self.server_id)['server']
-#        self.assertEqual(self.flavor_ref, server['flavor']['id'])
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('b963d4f1-94b3-4c40-9e97-7b583f46e470')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.snapshot,
-#                          'Snapshotting not available, backup not possible.')
-#    @test.services('image')
-#    def test_create_backup(self):
-#        # Positive test:create backup successfully and rotate backups correctly
-#        # create the first and the second backup
-#        backup1 = data_utils.rand_name('backup-1')
-#        resp = self.client.create_backup(self.server_id,
-#                                         backup_type='daily',
-#                                         rotation=2,
-#                                         name=backup1).response
-#        oldest_backup_exist = True
-#
-#        # the oldest one should be deleted automatically in this test
-#        def _clean_oldest_backup(oldest_backup):
-#            if oldest_backup_exist:
-#                try:
-#                    self.os.image_client.delete_image(oldest_backup)
-#                except lib_exc.NotFound:
-#                    pass
-#                else:
-#                    LOG.warning("Deletion of oldest backup %s should not have "
-#                                "been successful as it should have been "
-#                                "deleted during rotation." % oldest_backup)
-#
-#        image1_id = data_utils.parse_image_id(resp['location'])
-#        self.addCleanup(_clean_oldest_backup, image1_id)
-#        self.os.image_client.wait_for_image_status(image1_id, 'active')
-#
-#        backup2 = data_utils.rand_name('backup-2')
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#        resp = self.client.create_backup(self.server_id,
-#                                         backup_type='daily',
-#                                         rotation=2,
-#                                         name=backup2).response
-#        image2_id = data_utils.parse_image_id(resp['location'])
-#        self.addCleanup(self.os.image_client.delete_image, image2_id)
-#        self.os.image_client.wait_for_image_status(image2_id, 'active')
-#
-#        # verify they have been created
-#        properties = {
-#            'image_type': 'backup',
-#            'backup_type': "daily",
-#            'instance_uuid': self.server_id,
-#        }
-#        image_list = self.os.image_client.list_images(
-#            detail=True,
-#            properties=properties,
-#            status='active',
-#            sort_key='created_at',
-#            sort_dir='asc')['images']
-#        self.assertEqual(2, len(image_list))
-#        self.assertEqual((backup1, backup2),
-#                         (image_list[0]['name'], image_list[1]['name']))
-#
-#        # create the third one, due to the rotation is 2,
-#        # the first one will be deleted
-#        backup3 = data_utils.rand_name('backup-3')
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#        resp = self.client.create_backup(self.server_id,
-#                                         backup_type='daily',
-#                                         rotation=2,
-#                                         name=backup3).response
-#        image3_id = data_utils.parse_image_id(resp['location'])
-#        self.addCleanup(self.os.image_client.delete_image, image3_id)
-#        # the first back up should be deleted
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#        self.os.image_client.wait_for_resource_deletion(image1_id)
-#        oldest_backup_exist = False
-#        image_list = self.os.image_client.list_images(
-#            detail=True,
-#            properties=properties,
-#            status='active',
-#            sort_key='created_at',
-#            sort_dir='asc')['images']
-#        self.assertEqual(2, len(image_list),
-#                         'Unexpected number of images for '
-#                         'v2:test_create_backup; was the oldest backup not '
-#                         'yet deleted? Image list: %s' %
-#                         [image['name'] for image in image_list])
-#        self.assertEqual((backup2, backup3),
-#                         (image_list[0]['name'], image_list[1]['name']))
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('bd61a9fd-062f-4670-972b-2d6c3e3b9e73')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.pause,
-#                          'Pause is not available.')
-#    def test_pause_unpause_server(self):
-#        self.client.pause_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'PAUSED')
-#        self.client.unpause_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('0d8ee21e-b749-462d-83da-b85b41c86c7f')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.suspend,
-#                          'Suspend is not available.')
-#    def test_suspend_resume_server(self):
-#        self.client.suspend_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id,
-#                                       'SUSPENDED')
-#        self.client.resume_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('77eba8e0-036e-4635-944b-f7a8f3b78dc9')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.shelve,
-#                          'Shelve is not available.')
-#    def test_shelve_unshelve_server(self):
-#        self.client.shelve_server(self.server_id)
-#
-#        offload_time = CONF.compute.shelved_offload_time
-#        if offload_time >= 0:
-#            waiters.wait_for_server_status(self.client, self.server_id,
-#                                           'SHELVED_OFFLOADED',
-#                                           extra_timeout=offload_time)
-#        else:
-#            waiters.wait_for_server_status(self.client, self.server_id,
-#                                           'SHELVED')
-#
-#            self.client.shelve_offload_server(self.server_id)
-#            waiters.wait_for_server_status(self.client, self.server_id,
-#                                           'SHELVED_OFFLOADED')
-#
-#        server = self.client.show_server(self.server_id)['server']
-#        image_name = server['name'] + '-shelved'
-#        params = {'name': image_name}
-#        images = self.compute_images_client.list_images(**params)['images']
-#        self.assertEqual(1, len(images))
-#        self.assertEqual(image_name, images[0]['name'])
-#
-#        self.client.unshelve_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('80a8094c-211e-440a-ab88-9e59d556c7ee')
-#    def test_lock_unlock_server(self):
-#        # Lock the server,try server stop(exceptions throw),unlock it and retry
-#        self.client.lock_server(self.server_id)
-#        self.addCleanup(self.client.unlock_server, self.server_id)
-#        server = self.client.show_server(self.server_id)['server']
-#        self.assertEqual(server['status'], 'ACTIVE')
-#        # Locked server is not allowed to be stopped by non-admin user
-#        self.assertRaises(lib_exc.Conflict,
-#                          self.client.stop_server, self.server_id)
-#        self.client.unlock_server(self.server_id)
-#        self.client.stop_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'SHUTOFF')
-#        self.client.start_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
+class HybridVCloudServerActionsTestJSON(test_server_actions.ServerActionsTestJSON):
+    """Test server actions"""
+
+    def setUp(self):
+        # NOTE(afazekas): Normally we use the same server with all test cases,
+        # but if it has an issue, we build a new one
+        super(test_server_actions.ServerActionsTestJSON, self).setUp()
+        # Check if the server is in a clean state after test
+        try:
+            waiters.wait_for_server_status(self.client,
+                                           self.server_id, 'ACTIVE')
+        except lib_exc.NotFound:
+            # The server was deleted by previous test, create a new one
+            server = self.create_test_server(
+                validatable=True,
+                wait_until='ACTIVE',
+                availability_zone=CONF.compute.vcloud_availability_zone)
+            self.__class__.server_id = server['id']
+        except Exception:
+            # Rebuild server if something happened to it during a test
+            self.__class__.server_id = self.rebuild_server(
+                self.server_id, validatable=True)
+
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.vcloud_availability_zone,
+            **kwargs)
+        return server['id']
+
+    @testtools.skip('Do not support host operation')
+    @test.idempotent_id('80a8094c-211e-440a-ab88-9e59d556c7ee')
+    def test_lock_unlock_server(self):
+        # Lock the server,try server stop(exceptions throw),unlock it and retry
+        self.client.lock_server(self.server_id)
+        self.addCleanup(self.client.unlock_server, self.server_id)
+        server = self.client.show_server(self.server_id)['server']
+        self.assertEqual(server['status'], 'ACTIVE')
+        # Locked server is not allowed to be stopped by non-admin user
+        self.assertRaises(lib_exc.Conflict,
+                          self.client.stop_server, self.server_id)
+        self.client.unlock_server(self.server_id)
+        self.client.stop_server(self.server_id)
+        waiters.wait_for_server_status(self.client, self.server_id, 'SHUTOFF')
+        self.client.start_server(self.server_id)
+        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
+
+    @testtools.skip("HybridCloud Bug:after rebulding, vxlan tunnel can't set up") 
+    @test.idempotent_id('aaa6cdf3-55a7-461a-add9-1c8596b9a07c')
+    def test_rebuild_server(self):
+        # The server should be rebuilt using the provided image and data
+        meta = {'rebuild': 'server'}
+        new_name = data_utils.rand_name('server')
+        password = 'rebuildPassw0rd'
+        rebuilt_server = self.client.rebuild_server(
+            self.server_id,
+            self.image_ref_alt,
+            name=new_name,
+            metadata=meta,
+            adminPass=password)['server']
+
+        # If the server was rebuilt on a different image, restore it to the
+        # original image once the test ends
+        if self.image_ref_alt != self.image_ref:
+            self.addCleanup(self._rebuild_server_and_check, self.image_ref)
+
+        # Verify the properties in the initial response are correct
+        self.assertEqual(self.server_id, rebuilt_server['id'])
+        rebuilt_image_id = rebuilt_server['image']['id']
+        self.assertTrue(self.image_ref_alt.endswith(rebuilt_image_id))
+        self.assertEqual(self.flavor_ref, rebuilt_server['flavor']['id'])
+
+        # Verify the server properties after the rebuild completes
+        waiters.wait_for_server_status(self.client,
+                                       rebuilt_server['id'], 'ACTIVE')
+        server = self.client.show_server(rebuilt_server['id'])['server']
+        rebuilt_image_id = server['image']['id']
+        self.assertTrue(self.image_ref_alt.endswith(rebuilt_image_id))
+        self.assertEqual(new_name, server['name'])
+
+        if CONF.validation.run_validation:
+            # Authentication is attempted in the following order of priority:
+            # 1.The key passed in, if one was passed in.
+            # 2.Any key we can find through an SSH agent (if allowed).
+            # 3.Any "id_rsa", "id_dsa" or "id_ecdsa" key discoverable in
+            #   ~/.ssh/ (if allowed).
+            # 4.Plain username/password auth, if a password was given.
+            linux_client = remote_client.RemoteClient(
+                self.get_server_ip(rebuilt_server),
+                self.ssh_user,
+                password,
+                self.validation_resources['keypair']['private_key'])
+            linux_client.validate_authentication()
 
 
-#class HybridAwsServerActionsTestJSON(test_server_actions.ServerActionsTestJSON):
-#    """Test server actions"""
-#
-#    def setUp(self):
-#        # NOTE(afazekas): Normally we use the same server with all test cases,
-#        # but if it has an issue, we build a new one
-#        super(test_server_actions.ServerActionsTestJSON, self).setUp()
-#        # Check if the server is in a clean state after test
-#        try:
-#            waiters.wait_for_server_status(self.client,
-#                                           self.server_id, 'ACTIVE')
-#        except lib_exc.NotFound:
-#            # The server was deleted by previous test, create a new one
-#            server = self.create_test_server(
-#                validatable=True,
-#                wait_until='ACTIVE',
-#                availability_zone=CONF.compute.aws_availability_zone)
-#            self.__class__.server_id = server['id']
-#        except Exception:
-#            # Rebuild server if something happened to it during a test
-#            self.__class__.server_id = self.rebuild_server(
-#                self.server_id, validatable=True)
-#
-#    @classmethod
-#    def rebuild_server(cls, server_id, validatable=False, **kwargs):
-#        # Destroy an existing server and creates a new one
-#        if server_id:
-#            try:
-#                cls.servers_client.delete_server(server_id)
-#                waiters.wait_for_server_termination(cls.servers_client,
-#                                                    server_id)
-#            except Exception:
-#                LOG.exception('Failed to delete server %s' % server_id)
-#
-#        cls.password = data_utils.rand_password()
-#        server = cls.create_test_server(
-#            validatable,
-#            wait_until='ACTIVE',
-#            adminPass=cls.password,
-#            availability_zone=CONF.compute.aws_availability_zone,
-#            **kwargs)
-#        return server['id']
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('1499262a-9328-4eda-9068-db1ac57498d2')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
-#                          'Resize not available.')
-#    def test_resize_server_confirm(self):
-#        self._test_resize_server_confirm(stop=False)
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('138b131d-66df-48c9-a171-64f45eb92962')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
-#                          'Resize not available.')
-#    def test_resize_server_confirm_from_stopped(self):
-#        self._test_resize_server_confirm(stop=True)
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('c03aab19-adb1-44f5-917d-c419577e9e68')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.resize,
-#                          'Resize not available.')
-#    def test_resize_server_revert(self):
-#        # The server's RAM and disk space should return to its original
-#        # values after a resize is reverted
-#
-#        self.client.resize_server(self.server_id, self.flavor_ref_alt)
-#        waiters.wait_for_server_status(self.client, self.server_id,
-#                                       'VERIFY_RESIZE')
-#
-#        self.client.revert_resize_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#        server = self.client.show_server(self.server_id)['server']
-#        self.assertEqual(self.flavor_ref, server['flavor']['id'])
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('b963d4f1-94b3-4c40-9e97-7b583f46e470')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.snapshot,
-#                          'Snapshotting not available, backup not possible.')
-#    @test.services('image')
-#    def test_create_backup(self):
-#        # Positive test:create backup successfully and rotate backups correctly
-#        # create the first and the second backup
-#        backup1 = data_utils.rand_name('backup-1')
-#        resp = self.client.create_backup(self.server_id,
-#                                         backup_type='daily',
-#                                         rotation=2,
-#                                         name=backup1).response
-#        oldest_backup_exist = True
-#
-#        # the oldest one should be deleted automatically in this test
-#        def _clean_oldest_backup(oldest_backup):
-#            if oldest_backup_exist:
-#                try:
-#                    self.os.image_client.delete_image(oldest_backup)
-#                except lib_exc.NotFound:
-#                    pass
-#                else:
-#                    LOG.warning("Deletion of oldest backup %s should not have "
-#                                "been successful as it should have been "
-#                                "deleted during rotation." % oldest_backup)
-#
-#        image1_id = data_utils.parse_image_id(resp['location'])
-#        self.addCleanup(_clean_oldest_backup, image1_id)
-#        self.os.image_client.wait_for_image_status(image1_id, 'active')
-#
-#        backup2 = data_utils.rand_name('backup-2')
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#        resp = self.client.create_backup(self.server_id,
-#                                         backup_type='daily',
-#                                         rotation=2,
-#                                         name=backup2).response
-#        image2_id = data_utils.parse_image_id(resp['location'])
-#        self.addCleanup(self.os.image_client.delete_image, image2_id)
-#        self.os.image_client.wait_for_image_status(image2_id, 'active')
-#
-#        # verify they have been created
-#        properties = {
-#            'image_type': 'backup',
-#            'backup_type': "daily",
-#            'instance_uuid': self.server_id,
-#        }
-#        image_list = self.os.image_client.list_images(
-#            detail=True,
-#            properties=properties,
-#            status='active',
-#            sort_key='created_at',
-#            sort_dir='asc')['images']
-#        self.assertEqual(2, len(image_list))
-#        self.assertEqual((backup1, backup2),
-#                         (image_list[0]['name'], image_list[1]['name']))
-#
-#        # create the third one, due to the rotation is 2,
-#        # the first one will be deleted
-#        backup3 = data_utils.rand_name('backup-3')
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#        resp = self.client.create_backup(self.server_id,
-#                                         backup_type='daily',
-#                                         rotation=2,
-#                                         name=backup3).response
-#        image3_id = data_utils.parse_image_id(resp['location'])
-#        self.addCleanup(self.os.image_client.delete_image, image3_id)
-#        # the first back up should be deleted
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#        self.os.image_client.wait_for_resource_deletion(image1_id)
-#        oldest_backup_exist = False
-#        image_list = self.os.image_client.list_images(
-#            detail=True,
-#            properties=properties,
-#            status='active',
-#            sort_key='created_at',
-#            sort_dir='asc')['images']
-#        self.assertEqual(2, len(image_list),
-#                         'Unexpected number of images for '
-#                         'v2:test_create_backup; was the oldest backup not '
-#                         'yet deleted? Image list: %s' %
-#                         [image['name'] for image in image_list])
-#        self.assertEqual((backup2, backup3),
-#                         (image_list[0]['name'], image_list[1]['name']))
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('bd61a9fd-062f-4670-972b-2d6c3e3b9e73')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.pause,
-#                          'Pause is not available.')
-#    def test_pause_unpause_server(self):
-#        self.client.pause_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'PAUSED')
-#        self.client.unpause_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('0d8ee21e-b749-462d-83da-b85b41c86c7f')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.suspend,
-#                          'Suspend is not available.')
-#    def test_suspend_resume_server(self):
-#        self.client.suspend_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id,
-#                                       'SUSPENDED')
-#        self.client.resume_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('77eba8e0-036e-4635-944b-f7a8f3b78dc9')
-#    @testtools.skipUnless(CONF.compute_feature_enabled.shelve,
-#                          'Shelve is not available.')
-#    def test_shelve_unshelve_server(self):
-#        self.client.shelve_server(self.server_id)
-#
-#        offload_time = CONF.compute.shelved_offload_time
-#        if offload_time >= 0:
-#            waiters.wait_for_server_status(self.client, self.server_id,
-#                                           'SHELVED_OFFLOADED',
-#                                           extra_timeout=offload_time)
-#        else:
-#            waiters.wait_for_server_status(self.client, self.server_id,
-#                                           'SHELVED')
-#
-#            self.client.shelve_offload_server(self.server_id)
-#            waiters.wait_for_server_status(self.client, self.server_id,
-#                                           'SHELVED_OFFLOADED')
-#
-#        server = self.client.show_server(self.server_id)['server']
-#        image_name = server['name'] + '-shelved'
-#        params = {'name': image_name}
-#        images = self.compute_images_client.list_images(**params)['images']
-#        self.assertEqual(1, len(images))
-#        self.assertEqual(image_name, images[0]['name'])
-#
-#        self.client.unshelve_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
-#
-#    @testtools.skip('Do not support host operation')
-#    @test.idempotent_id('80a8094c-211e-440a-ab88-9e59d556c7ee')
-#    def test_lock_unlock_server(self):
-#        # Lock the server,try server stop(exceptions throw),unlock it and retry
-#        self.client.lock_server(self.server_id)
-#        self.addCleanup(self.client.unlock_server, self.server_id)
-#        server = self.client.show_server(self.server_id)['server']
-#        self.assertEqual(server['status'], 'ACTIVE')
-#        # Locked server is not allowed to be stopped by non-admin user
-#        self.assertRaises(lib_exc.Conflict,
-#                          self.client.stop_server, self.server_id)
-#        self.client.unlock_server(self.server_id)
-#        self.client.stop_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'SHUTOFF')
-#        self.client.start_server(self.server_id)
-#        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
+    @test.idempotent_id('30449a88-5aff-4f9b-9866-6ee9b17f906d')
+    def test_rebuild_server_in_stop_state(self):
+        # The server in stop state  should be rebuilt using the provided
+        # image and remain in SHUTOFF state
+        server = self.client.show_server(self.server_id)['server']
+        old_image = server['image']['id']
+        new_image = (self.image_ref_alt
+                     if old_image == self.image_ref else self.image_ref)
+        self.client.stop_server(self.server_id)
+        waiters.wait_for_server_status(self.client, self.server_id, 'SHUTOFF')
+        rebuilt_server = (self.client.rebuild_server(self.server_id, new_image)
+                          ['server'])
+        # If the server was rebuilt on a different image, restore it to the
+        # original image once the test ends
+        if self.image_ref_alt != self.image_ref:
+            self.addCleanup(self._rebuild_server_and_check, old_image)
+
+        # Verify the properties in the initial response are correct
+        self.assertEqual(self.server_id, rebuilt_server['id'])
+        rebuilt_image_id = rebuilt_server['image']['id']
+        self.assertEqual(new_image, rebuilt_image_id)
+        self.assertEqual(self.flavor_ref, rebuilt_server['flavor']['id'])
+
+        # Verify the server properties after the rebuild completes
+        waiters.wait_for_server_status(self.client,
+                                       rebuilt_server['id'], 'SHUTOFF')
+        server = self.client.show_server(rebuilt_server['id'])['server']
+        rebuilt_image_id = server['image']['id']
+        self.assertEqual(new_image, rebuilt_image_id)
+
+        self.client.start_server(self.server_id)
+
+        #If not so, teardown report no container exception
+        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
+
+    @testtools.skip("HybridCloud Bug:after reboot, boot_time can't change")
+    @test.attr(type='smoke')
+    @test.idempotent_id('2cb1baf6-ac8d-4429-bf0d-ba8a0ba53e32')
+    def test_reboot_server_hard(self):
+        # The server should be power cycled
+        self._test_reboot_server('HARD')
+
+    @testtools.skip("HybridCloud:cascading project not support now")
+    @test.idempotent_id('b963d4f1-94b3-4c40-9e97-7b583f46e470')
+    @testtools.skipUnless(CONF.compute_feature_enabled.snapshot,
+                          'Snapshotting not available, backup not possible.')
+    @test.services('image')
+    def test_create_backup(self):
+        pass
+
+class HybridAwsServerActionsTestJSON(test_server_actions.ServerActionsTestJSON):
+    """Test server actions"""
+
+    def setUp(self):
+        # NOTE(afazekas): Normally we use the same server with all test cases,
+        # but if it has an issue, we build a new one
+        super(test_server_actions.ServerActionsTestJSON, self).setUp()
+        # Check if the server is in a clean state after test
+        try:
+            waiters.wait_for_server_status(self.client,
+                                           self.server_id, 'ACTIVE')
+        except lib_exc.NotFound:
+            # The server was deleted by previous test, create a new one
+            server = self.create_test_server(
+                validatable=True,
+                wait_until='ACTIVE',
+                availability_zone=CONF.compute.aws_availability_zone)
+            self.__class__.server_id = server['id']
+        except Exception:
+            # Rebuild server if something happened to it during a test
+            self.__class__.server_id = self.rebuild_server(
+                self.server_id, validatable=True)
+
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.aws_availability_zone,
+            **kwargs)
+        return server['id']
+
+    @testtools.skip('Do not support host operation')
+    @test.idempotent_id('80a8094c-211e-440a-ab88-9e59d556c7ee')
+    def test_lock_unlock_server(self):
+        # Lock the server,try server stop(exceptions throw),unlock it and retry
+        self.client.lock_server(self.server_id)
+        self.addCleanup(self.client.unlock_server, self.server_id)
+        server = self.client.show_server(self.server_id)['server']
+        self.assertEqual(server['status'], 'ACTIVE')
+        # Locked server is not allowed to be stopped by non-admin user
+        self.assertRaises(lib_exc.Conflict,
+                          self.client.stop_server, self.server_id)
+        self.client.unlock_server(self.server_id)
+        self.client.stop_server(self.server_id)
+        waiters.wait_for_server_status(self.client, self.server_id, 'SHUTOFF')
+        self.client.start_server(self.server_id)
+        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
+
+    @testtools.skip("HybridCloud Bug:after rebulding, vxlan tunnel can't set up") 
+    @test.idempotent_id('aaa6cdf3-55a7-461a-add9-1c8596b9a07c')
+    def test_rebuild_server(self):
+        # The server should be rebuilt using the provided image and data
+        meta = {'rebuild': 'server'}
+        new_name = data_utils.rand_name('server')
+        password = 'rebuildPassw0rd'
+        rebuilt_server = self.client.rebuild_server(
+            self.server_id,
+            self.image_ref_alt,
+            name=new_name,
+            metadata=meta,
+            adminPass=password)['server']
+
+        # If the server was rebuilt on a different image, restore it to the
+        # original image once the test ends
+        if self.image_ref_alt != self.image_ref:
+            self.addCleanup(self._rebuild_server_and_check, self.image_ref)
+
+        # Verify the properties in the initial response are correct
+        self.assertEqual(self.server_id, rebuilt_server['id'])
+        rebuilt_image_id = rebuilt_server['image']['id']
+        self.assertTrue(self.image_ref_alt.endswith(rebuilt_image_id))
+        self.assertEqual(self.flavor_ref, rebuilt_server['flavor']['id'])
+
+        # Verify the server properties after the rebuild completes
+        waiters.wait_for_server_status(self.client,
+                                       rebuilt_server['id'], 'ACTIVE')
+        server = self.client.show_server(rebuilt_server['id'])['server']
+        rebuilt_image_id = server['image']['id']
+        self.assertTrue(self.image_ref_alt.endswith(rebuilt_image_id))
+        self.assertEqual(new_name, server['name'])
+
+        if CONF.validation.run_validation:
+            # Authentication is attempted in the following order of priority:
+            # 1.The key passed in, if one was passed in.
+            # 2.Any key we can find through an SSH agent (if allowed).
+            # 3.Any "id_rsa", "id_dsa" or "id_ecdsa" key discoverable in
+            #   ~/.ssh/ (if allowed).
+            # 4.Plain username/password auth, if a password was given.
+            linux_client = remote_client.RemoteClient(
+                self.get_server_ip(rebuilt_server),
+                self.ssh_user,
+                password,
+                self.validation_resources['keypair']['private_key'])
+            linux_client.validate_authentication()
+
+    @test.idempotent_id('30449a88-5aff-4f9b-9866-6ee9b17f906d')
+    def test_rebuild_server_in_stop_state(self):
+        # The server in stop state  should be rebuilt using the provided
+        # image and remain in SHUTOFF state
+        server = self.client.show_server(self.server_id)['server']
+        old_image = server['image']['id']
+        new_image = (self.image_ref_alt
+                     if old_image == self.image_ref else self.image_ref)
+        self.client.stop_server(self.server_id)
+        waiters.wait_for_server_status(self.client, self.server_id, 'SHUTOFF')
+        rebuilt_server = (self.client.rebuild_server(self.server_id, new_image)
+                          ['server'])
+        # If the server was rebuilt on a different image, restore it to the
+        # original image once the test ends
+        if self.image_ref_alt != self.image_ref:
+            self.addCleanup(self._rebuild_server_and_check, old_image)
+
+        # Verify the properties in the initial response are correct
+        self.assertEqual(self.server_id, rebuilt_server['id'])
+        rebuilt_image_id = rebuilt_server['image']['id']
+        self.assertEqual(new_image, rebuilt_image_id)
+        self.assertEqual(self.flavor_ref, rebuilt_server['flavor']['id'])
+
+        # Verify the server properties after the rebuild completes
+        waiters.wait_for_server_status(self.client,
+                                       rebuilt_server['id'], 'SHUTOFF')
+        server = self.client.show_server(rebuilt_server['id'])['server']
+        rebuilt_image_id = server['image']['id']
+        self.assertEqual(new_image, rebuilt_image_id)
+
+        self.client.start_server(self.server_id)
+
+        #If not so, teardown report no container exception
+        waiters.wait_for_server_status(self.client, self.server_id, 'ACTIVE')
+
+    @testtools.skip("HybridCloud Bug:after reboot, boot_time can't change")
+    @test.attr(type='smoke')
+    @test.idempotent_id('2cb1baf6-ac8d-4429-bf0d-ba8a0ba53e32')
+    def test_reboot_server_hard(self):
+        # The server should be power cycled
+        self._test_reboot_server('HARD')
+
+    @testtools.skip("HybridCloud:cascading project not support now")
+    @test.idempotent_id('b963d4f1-94b3-4c40-9e97-7b583f46e470')
+    @testtools.skipUnless(CONF.compute_feature_enabled.snapshot,
+                          'Snapshotting not available, backup not possible.')
+    @test.services('image')
+    def test_create_backup(self):
+        pass
 
 class HybridServerAddressesTestJSON(test_server_addresses.ServerAddressesTestJSON):
     """Test server address"""
@@ -1295,7 +1157,7 @@ class HybridAwsServerPasswordTestJSON(test_server_password.ServerPasswordTestJSO
 class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPersonalityTestJSON):
     """Test server personality"""
 
-    @testtools.skip('BUG execute failed now')
+    @testtools.skip("HybridCloud Bug:when exec this testcase individual will sucess, exec in class will failed")
     @test.idempotent_id('3cfe87fd-115b-4a02-b942-7dc36a337fdf')
     def test_create_server_with_personality(self):
         file_contents = 'This is a test file.'
@@ -1318,7 +1180,6 @@ class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPerson
                              linux_client.exec_command(
                                  'cat %s' % file_path))
 
-    @testtools.skip('BUG execute failed now')
     @test.idempotent_id('128966d8-71fc-443c-8cab-08e24114ecc9')
     def test_rebuild_server_with_personality(self):
         server = self.create_test_server(wait_until='ACTIVE', validatable=True,
@@ -1334,7 +1195,6 @@ class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPerson
         self.assertEqual(self.image_ref_alt,
                          rebuilt_server['server']['image']['id'])
 
-    @testtools.skip('BUG execute failed now')
     @test.idempotent_id('176cd8c9-b9e8-48ee-a480-180beab292bf')
     def test_personality_files_exceed_limit(self):
         # Server creation should fail if greater than the maximum allowed
@@ -1388,9 +1248,11 @@ class HybridVCloudServerPersonalityTestJSON(test_server_personality.ServerPerson
                                  linux_client.exec_command(
                                      'cat %s' % i['path']))
 
+
 class HybridAwsServerPersonalityTestJSON(test_server_personality.ServerPersonalityTestJSON):
     """Test server personality"""
 
+    @testtools.skip("HybridCloud Bug:when exec this testcase individual will sucess, exec in class will failed")
     @test.idempotent_id('3cfe87fd-115b-4a02-b942-7dc36a337fdf')
     def test_create_server_with_personality(self):
         file_contents = 'This is a test file.'
@@ -1413,7 +1275,6 @@ class HybridAwsServerPersonalityTestJSON(test_server_personality.ServerPersonali
                              linux_client.exec_command(
                                  'cat %s' % file_path))
 
-    @testtools.skip('BUG execute failed now')
     @test.idempotent_id('128966d8-71fc-443c-8cab-08e24114ecc9')
     def test_rebuild_server_with_personality(self):
         server = self.create_test_server(wait_until='ACTIVE', validatable=True,
@@ -1449,7 +1310,6 @@ class HybridAwsServerPersonalityTestJSON(test_server_personality.ServerPersonali
                           self.create_test_server, personality=personality,
                           availability_zone=CONF.compute.aws_availability_zone)
 
-    @testtools.skip('BUG execute failed now')
     @test.idempotent_id('52f12ee8-5180-40cc-b417-31572ea3d555')
     def test_can_create_server_with_max_number_personality_files(self):
         # Server should be created successfully if maximum allowed number of
@@ -1731,24 +1591,31 @@ class HybridVCloudServersNegativeTestJSON(test_servers_negative.ServersNegativeT
             **kwargs)
         return server['id']
 
-    @testtools.skip('BUG execute failed now')
     @test.attr(type=['negative'])
-    @test.idempotent_id('5c75009d-3eea-423e-bea3-61b09fd25f9c')
-    def test_delete_a_server_of_another_tenant(self):
-        # Delete a server that belongs to another tenant
-        self.assertRaises(lib_exc.NotFound,
-                          self.alt_client.delete_server,
-                          self.server_id)
+    @test.idempotent_id('98fa0458-1485-440f-873b-fe7f0d714930')
+    def test_rebuild_deleted_server(self):
+        # Rebuild a deleted server
+        server = self.create_test_server(wait_until='ACTIVE',
+                                         availability_zone=CONF.compute.vcloud_availability_zone)
+        self.client.delete_server(server['id'])
+        waiters.wait_for_server_termination(self.client, server['id'])
 
-    @testtools.skip('BUG execute failed now')
-    @test.attr(type=['negative'])
-    @test.idempotent_id('543d84c1-dd2e-4c6d-8cb2-b9da0efaa384')
-    def test_update_server_of_another_tenant(self):
-        # Update name of a server that belongs to another tenant    
-        new_name = self.server_id + '_new'
         self.assertRaises(lib_exc.NotFound,
-                          self.alt_client.update_server, self.server_id,
-                              name=new_name)
+                          self.client.rebuild_server,
+                          server['id'], self.image_ref_alt)
+ 
+    @test.attr(type=['negative'])
+    @test.idempotent_id('581a397d-5eab-486f-9cf9-1014bbd4c984')
+    def test_reboot_deleted_server(self):
+        # Reboot a deleted server
+        server = self.create_test_server(wait_until='ACTIVE',
+                                         availability_zone=CONF.compute.vcloud_availability_zone)
+        self.client.delete_server(server['id'])
+        waiters.wait_for_server_termination(self.client, server['id'])
+
+        self.assertRaises(lib_exc.NotFound, self.client.reboot_server,
+                          server['id'], type='SOFT')
+
 
 class HybridAwsServersNegativeTestJSON(test_servers_negative.ServersNegativeTestJSON):
     """Test servers negative"""
@@ -1780,49 +1647,12 @@ class HybridAwsServersNegativeTestJSON(test_servers_negative.ServersNegativeTest
             **kwargs)
         return server['id']
 
-    @testtools.skip('BUG execute failed now')
-    @test.attr(type=['negative'])
-    @test.idempotent_id('5c75009d-3eea-423e-bea3-61b09fd25f9c')
-    def test_delete_a_server_of_another_tenant(self):
-        # Delete a server that belongs to another tenant
-        self.assertRaises(lib_exc.NotFound,
-                          self.alt_client.delete_server,
-                          self.server_id)
-
-    @testtools.skip('BUG execute failed now')
-    @test.attr(type=['negative'])
-    @test.idempotent_id('f4d7279b-5fd2-4bf2-9ba4-ae35df0d18c5')
-    def test_delete_server_pass_id_exceeding_length_limit(self):
-        # Pass a server ID that exceeds length limit to delete server
-
-        self.assertRaises(lib_exc.NotFound, self.client.delete_server,
-                          sys.maxint + 1)
-
-    @testtools.skip('BUG execute failed now')
-    @test.attr(type=['negative'])
-    @test.idempotent_id('75f79124-277c-45e6-a373-a1d6803f4cc4')
-    def test_delete_server_pass_negative_id(self):
-        # Pass an invalid string parameter to delete server
-
-        self.assertRaises(lib_exc.NotFound, self.client.delete_server, -1)
-
-    @testtools.skip('BUG execute failed now')
-    @test.idempotent_id('6a8dc0c6-6cd4-4c0a-9f32-413881828091')
-    @testtools.skipUnless(CONF.compute_feature_enabled.pause,
-                          'Pause is not available.')
-    @test.attr(type=['negative'])
-    def test_pause_non_existent_server(self):
-        # pause a non existent server
-        nonexistent_server = data_utils.rand_uuid()
-        self.assertRaises(lib_exc.NotFound, self.client.pause_server,
-                          nonexistent_server)
-
-    @testtools.skip('BUG execute failed now')
     @test.attr(type=['negative'])
     @test.idempotent_id('98fa0458-1485-440f-873b-fe7f0d714930')
     def test_rebuild_deleted_server(self):
         # Rebuild a deleted server
-        server = self.create_test_server()
+        server = self.create_test_server(wait_until='ACTIVE',
+                                         availability_zone=CONF.compute.aws_availability_zone)
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
@@ -1830,26 +1660,18 @@ class HybridAwsServersNegativeTestJSON(test_servers_negative.ServersNegativeTest
                           self.client.rebuild_server,
                           server['id'], self.image_ref_alt)
 
-    @testtools.skip('BUG execute failed now')
     @test.attr(type=['negative'])
-    @test.idempotent_id('d86141a7-906e-4731-b187-d64a2ea61422')
-    def test_rebuild_non_existent_server(self):
-        # Rebuild a non existent server
-        nonexistent_server = data_utils.rand_uuid()
-        self.assertRaises(lib_exc.NotFound,
-                          self.client.rebuild_server,
-                          nonexistent_server,
-                          self.image_ref_alt)
+    @test.idempotent_id('581a397d-5eab-486f-9cf9-1014bbd4c984')
+    def test_reboot_deleted_server(self):
+        # Reboot a deleted server
+        server = self.create_test_server(wait_until='ACTIVE',
+                                         availability_zone=CONF.compute.aws_availability_zone)
+        self.client.delete_server(server['id'])
+        waiters.wait_for_server_termination(self.client, server['id'])
 
-    @testtools.skip('BUG execute failed now')
-    @test.attr(type=['negative'])
-    @test.idempotent_id('543d84c1-dd2e-4c6d-8cb2-b9da0efaa384')
-    def test_update_server_of_another_tenant(self):
-        # Update name of a server that belongs to another tenant
-        new_name = self.server_id + '_new'
-        self.assertRaises(lib_exc.NotFound,
-                          self.alt_client.update_server, self.server_id,
-                          name=new_name)
+        self.assertRaises(lib_exc.NotFound, self.client.reboot_server,
+                          server['id'], type='SOFT')
+
 
 class HybridVirtualInterfacesNegativeTestJSON(test_virtual_interfaces_negative.VirtualInterfacesNegativeTestJSON):
     """Test virtual interfaces negative"""
