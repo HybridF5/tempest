@@ -22,7 +22,7 @@ import tempest.api.compute.volumes.test_attach_volume as VolumeAttachTest
 CONF = config.CONF
 
 
-class HybridAttachVolumeTestJSON(VolumeAttachTest.AttachVolumeTestJSON):
+class HybridVCloudAttachVolumeTestJSON(VolumeAttachTest.AttachVolumeTestJSON):
 
     def _create_and_attach(self):
         # Start a server and wait for it to become ready
@@ -30,7 +30,7 @@ class HybridAttachVolumeTestJSON(VolumeAttachTest.AttachVolumeTestJSON):
         self.server = self.create_test_server(
             validatable=True,
             wait_until='ACTIVE',
-            adminPass=self.admin_pass, availability_zone=CONF.compute.default_availability_zone)
+            adminPass=self.admin_pass, availability_zone=CONF.compute.vcloud_availability_zone)
 
         # Record addresses so that we can ssh later
         self.server['addresses'] = self.servers_client.list_addresses(
@@ -38,7 +38,38 @@ class HybridAttachVolumeTestJSON(VolumeAttachTest.AttachVolumeTestJSON):
 
         # Create a volume and wait for it to become ready
         self.volume = self.volumes_client.create_volume(
-            size=CONF.volume.volume_size, display_name='test', availability_zone=CONF.compute.default_availability_zone)['volume']
+            size=CONF.volume.volume_size, display_name='test', availability_zone=CONF.compute.vcloud_availability_zone)['volume']
+        self.addCleanup(self._delete_volume)
+        waiters.wait_for_volume_status(self.volumes_client,
+                                       self.volume['id'], 'available')
+
+        # Attach the volume to the server
+        self.attachment = self.servers_client.attach_volume(
+            self.server['id'],
+            volumeId=self.volume['id'],
+            device='/dev/%s' % self.device)['volumeAttachment']
+        waiters.wait_for_volume_status(self.volumes_client,
+                                       self.volume['id'], 'in-use')
+
+        self.addCleanup(self._detach, self.server['id'], self.volume['id'])
+
+class HybridAWSAttachVolumeTestJSON(VolumeAttachTest.AttachVolumeTestJSON):
+
+    def _create_and_attach(self):
+        # Start a server and wait for it to become ready
+        self.admin_pass = self.image_ssh_password
+        self.server = self.create_test_server(
+            validatable=True,
+            wait_until='ACTIVE',
+            adminPass=self.admin_pass, availability_zone=CONF.compute.aws_availability_zone)
+
+        # Record addresses so that we can ssh later
+        self.server['addresses'] = self.servers_client.list_addresses(
+            self.server['id'])['addresses']
+
+        # Create a volume and wait for it to become ready
+        self.volume = self.volumes_client.create_volume(
+            size=CONF.volume.volume_size, display_name='test', availability_zone=CONF.compute.aws_availability_zone)['volume']
         self.addCleanup(self._delete_volume)
         waiters.wait_for_volume_status(self.volumes_client,
                                        self.volume['id'], 'available')
