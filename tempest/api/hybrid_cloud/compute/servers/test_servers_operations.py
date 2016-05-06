@@ -77,7 +77,6 @@ class HybridCreateVCloudServersTestJSON(test_create_server.ServersTestJSON):
         cls.name = data_utils.rand_name('server')
         cls.password = data_utils.rand_password()
         disk_config = cls.disk_config
-        return
         cls.server_initial = cls.create_test_server(
             validatable=True,
             wait_until='ACTIVE',
