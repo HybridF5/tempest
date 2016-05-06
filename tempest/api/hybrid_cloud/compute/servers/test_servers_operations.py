@@ -79,6 +79,7 @@ class HybridCreateVCloudServersTestJSON(test_create_server.ServersTestJSON):
         cls.name = data_utils.rand_name('server')
         cls.password = data_utils.rand_password()
         disk_config = cls.disk_config
+        return
         cls.server_initial = cls.create_test_server(
             validatable=True,
             wait_until='ACTIVE',
@@ -209,6 +210,63 @@ class HybridCreateVCloudServersTestJSON(test_create_server.ServersTestJSON):
                     netaddr.IPNetwork('19.80.0.0/24')]
         for address, network in zip(addr, networks):
             self.assertIn(address, network)
+
+    @test.idempotent_id('c25a6b9c-764d-4254-b782-e56074987daf')
+    def test_create_server_with_user_data(self):
+        name = data_utils.rand_name('server_with_user_data')
+        rand_data = data_utils.random_bytes()
+        password = self.password
+        created_server = self.create_test_server(wait_until='ACTIVE', 
+                                         name=name,
+                                         adminPass=password,
+                                         user_data=base64.b64encode(rand_data),
+                                         #validatable=bool(CONF.validation.run_validation),
+                                         availability_zone=CONF.compute.vcloud_availability_zone)
+
+        server = self.client.show_server(created_server['id'])['server']
+
+        if CONF.validation.run_validation:
+            linux_client = remote_client.RemoteClient(
+                self.get_server_ip(server),
+                self.ssh_user, password,
+                self.validation_resources['keypair']['private_key'])
+            self.assertEqual(rand_data,
+                             linux_client.exec_command(
+                                 'curl http://169.254.169.254/user-data'))
+
+    @test.idempotent_id('57318d1e-67ec-4889-b42d-e7874366ce4c')
+    def test_create_server_with_network_port(self):
+        name = data_utils.rand_name('server_with_network_port')
+        net = self._create_net_subnet_ret_net_from_cidr('19.90.5.0/24')
+        port = self.os.ports_client.create_port(network_id=net['network']['id'])
+        self.addCleanup(self.os.ports_client.delete_port, port['port']['id'])
+        created_server = self.create_test_server(wait_until='ACTIVE', name=name,
+                                         networks = [{"port": port['port']['id']}],
+                                         availability_zone=CONF.compute.vcloud_availability_zone)
+
+        server = self.client.show_server(created_server['id'])['server']
+
+    @test.idempotent_id('0828112b-d873-435f-8798-6eafdbf363f4')
+    def test_create_server_with_network_v4_fixed_ip(self):
+        name = data_utils.rand_name('server_with_network_fixed')
+        ip = "19.90.8.50"
+        net = self._create_net_subnet_ret_net_from_cidr('19.90.8.0/24')
+        created_server = self.create_test_server(wait_until='ACTIVE', name=name,
+                                         networks=[{"uuid": net['network']['id'], "fixed_ip":ip}],
+                                         availability_zone=CONF.compute.vcloud_availability_zone)
+
+        import pdb;pdb.set_trace()
+        def cleanup_server():
+            self.client.delete_server(created_server['id'])
+            waiters.wait_for_server_termination(self.client,
+                                                created_server['id'])
+
+        self.addCleanup(cleanup_server)
+
+        addresses = (self.client.list_addresses(created_server['id'])
+                     ['addresses'])
+        addr = addresses[net['network']['name']][0]['addr']
+        self.assertEqual(addr, ip)
 
 class HybridCreateAwsServersTestJSON(test_create_server.ServersTestJSON):
     """Test create servers"""
