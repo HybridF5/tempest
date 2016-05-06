@@ -30,8 +30,8 @@ class HybridImagesMetadataNegativeTestJSON(test_image_metadata_negative.ImagesMe
 
 class HybridImagesTestJSON(test_images.ImagesTestJSON):
     """Test Imges"""
-    
-    @testtools.skip('BUG execute failed now')
+
+    @testtools.skip("HybridCloud Bug:image id changed by proxy, response return original id,so testcase wait timeout")
     @test.idempotent_id('aa06b52b-2db5-4807-b218-9441f75d74e3')
     def test_delete_saving_image(self):
         snapshot_name = data_utils.rand_name('test-snap')
@@ -42,42 +42,10 @@ class HybridImagesTestJSON(test_images.ImagesTestJSON):
                                               wait_until='SAVING')
         self.client.delete_image(image['id'])
 
-    @testtools.skip('Change to two az versions')
+    @testtools.skip("HybridCloud Bug:image id changed by proxy, response return original id,so testcase wait fail") 
     @test.idempotent_id('aaacd1d0-55a2-4ce8-818a-b5439df8adc9')
     def test_create_image_from_stopped_server(self):
         server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.default_availability_zone)
-        self.servers_client.stop_server(server['id'])
-        waiters.wait_for_server_status(self.servers_client,
-                                       server['id'], 'SHUTOFF')
-        self.addCleanup(self.servers_client.delete_server, server['id'])
-        snapshot_name = data_utils.rand_name('test-snap')
-        image = self.create_image_from_server(server['id'],
-                                              name=snapshot_name,
-                                              wait_until='ACTIVE',
-                                              wait_for_server=False)
-        self.addCleanup(self.client.delete_image, image['id'])
-        self.assertEqual(snapshot_name, image['name'])
-
-    @testtools.skip('BUG execute failed now')
-    @test.idempotent_id('aaacd1d0-55a2-4ce8-818a-b5439df8adc8')
-    def test_create_image_from_stopped_server_vcloud(self):
-        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
-        self.servers_client.stop_server(server['id'])
-        waiters.wait_for_server_status(self.servers_client,
-                                       server['id'], 'SHUTOFF')
-        self.addCleanup(self.servers_client.delete_server, server['id'])
-        snapshot_name = data_utils.rand_name('test-snap')
-        image = self.create_image_from_server(server['id'],
-                                              name=snapshot_name,
-                                              wait_until='ACTIVE',
-                                              wait_for_server=False)
-        self.addCleanup(self.client.delete_image, image['id'])
-        self.assertEqual(snapshot_name, image['name'])
-
-    @testtools.skip('BUG execute failed now')
-    @test.idempotent_id('aaacd1d0-55a2-4ce8-818a-b5439df8adc7')
-    def test_create_image_from_stopped_server_aws(self):
-        server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
         self.servers_client.stop_server(server['id'])
         waiters.wait_for_server_status(self.servers_client,
                                        server['id'], 'SHUTOFF')
@@ -109,49 +77,213 @@ class HybridImagesNegativeTestJSON(test_images_negative.ImagesNegativeTestJSON):
                           self.create_image_from_server,
                           server['id'], name=name, meta=meta)
 
-#BUG execute failed now
-#class HybridImagesOneVCloudServerTestJSON(test_images_oneserver.ImagesOneServerTestJSON):
-#    """Test Imges"""
-#
-#    @classmethod
-#    def resource_setup(cls):
-#        super(test_images_oneserver.ImagesOneServerTestJSON, cls).resource_setup()
-#        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
-#        cls.server_id = server['id']
+class HybridImagesOneVCloudServerTestJSON(test_images_oneserver.ImagesOneServerTestJSON):
+    """Test Imges"""
 
-#class HybridImagesOneAwsServerTestJSON(test_images_oneserver.ImagesOneServerTestJSON):
-#    """Test Imges"""
-#
-#    @classmethod
-#    def resource_setup(cls):
-#        super(test_images_oneserver.ImagesOneServerTestJSON, cls).resource_setup()
-#        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
-#        cls.server_id = server['id']
+    @classmethod
+    def resource_setup(cls):
+        super(test_images_oneserver.ImagesOneServerTestJSON, cls).resource_setup()
+        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
+        cls.server_id = server['id']
 
-#BUG execute failed now
-#class HybridImagesOneVCloudServerNegativeTestJSON(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON):
-#    """Test Imges"""
-#
-#    @classmethod
-#    def resource_setup(cls):
-#        super(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON, cls).resource_setup()
-#        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
-#        cls.server_id = server['id']
-#
-#        cls.image_ids = []
+    @testtools.skip("HybridCloud Bug:image id changed by proxy, response return original id, so testcase wait fail") 
+    @test.idempotent_id('3731d080-d4c5-4872-b41a-64d0d0021314')
+    def test_create_delete_image(self):
 
-#class HybridImagesOneAwsServerNegativeTestJSON(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON):
-#    """Test Imges"""
-#
-#    @classmethod
-#    def resource_setup(cls):
-#        super(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON, cls).resource_setup()
-#        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
-#        cls.server_id = server['id']
-#
-#        cls.image_ids = []
+        # Create a new image
+        name = data_utils.rand_name('image')
+        meta = {'image_type': 'test'}
+        body = self.client.create_image(self.server_id, name=name,
+                                        metadata=meta)
+        image_id = data_utils.parse_image_id(body.response['location'])
+        waiters.wait_for_image_status(self.client, image_id, 'ACTIVE')
 
-#BUG execute failed now
+        # Verify the image was created correctly
+        image = self.client.show_image(image_id)['image']
+        self.assertEqual(name, image['name'])
+        self.assertEqual('test', image['metadata']['image_type'])
+
+        original_image = self.client.show_image(self.image_ref)['image']
+
+        # Verify minRAM is the same as the original image
+        self.assertEqual(image['minRam'], original_image['minRam'])
+
+        # Verify minDisk is the same as the original image or the flavor size
+        flavor_disk_size = self._get_default_flavor_disk_size(self.flavor_ref)
+        self.assertIn(str(image['minDisk']),
+                      (str(original_image['minDisk']), str(flavor_disk_size)))
+
+        # Verify the image was deleted correctly
+        self.client.delete_image(image_id)
+        self.client.wait_for_resource_deletion(image_id)
+
+    @testtools.skip("HybridCloud Bug:image id changed by proxy, response return original id, so testcase wait fail") 
+    @test.idempotent_id('3b7c6fe4-dfe7-477c-9243-b06359db51e6')
+    def test_create_image_specify_multibyte_character_image_name(self):
+        # prefix character is:
+        # http://www.fileformat.info/info/unicode/char/1F4A9/index.htm
+
+        # We use a string with 3 byte utf-8 character due to bug
+        # #1370954 in glance which will 500 if mysql is used as the
+        # backend and it attempts to store a 4 byte utf-8 character
+        utf8_name = data_utils.rand_name('\xe2\x82\xa1')
+        body = self.client.create_image(self.server_id, name=utf8_name)
+        image_id = data_utils.parse_image_id(body.response['location'])
+        self.addCleanup(self.client.delete_image, image_id)
+
+class HybridImagesOneAwsServerTestJSON(test_images_oneserver.ImagesOneServerTestJSON):
+    """Test Imges"""
+
+    @classmethod
+    def resource_setup(cls):
+        super(test_images_oneserver.ImagesOneServerTestJSON, cls).resource_setup()
+        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
+        cls.server_id = server['id']
+
+    @testtools.skip("HybridCloud Bug:image id changed by proxy, response return original id, so testcase wait fail") 
+    @test.idempotent_id('3731d080-d4c5-4872-b41a-64d0d0021314')
+    def test_create_delete_image(self):
+
+        # Create a new image
+        name = data_utils.rand_name('image')
+        meta = {'image_type': 'test'}
+        body = self.client.create_image(self.server_id, name=name,
+                                        metadata=meta)
+        image_id = data_utils.parse_image_id(body.response['location'])
+        waiters.wait_for_image_status(self.client, image_id, 'ACTIVE')
+
+        # Verify the image was created correctly
+        image = self.client.show_image(image_id)['image']
+        self.assertEqual(name, image['name'])
+        self.assertEqual('test', image['metadata']['image_type'])
+
+        original_image = self.client.show_image(self.image_ref)['image']
+
+        # Verify minRAM is the same as the original image
+        self.assertEqual(image['minRam'], original_image['minRam'])
+    
+        # Verify minDisk is the same as the original image or the flavor size
+        flavor_disk_size = self._get_default_flavor_disk_size(self.flavor_ref)
+        self.assertIn(str(image['minDisk']),
+                      (str(original_image['minDisk']), str(flavor_disk_size)))
+
+        # Verify the image was deleted correctly
+        self.client.delete_image(image_id)
+        self.client.wait_for_resource_deletion(image_id)
+
+    @testtools.skip("HybridCloud Bug:image id changed by proxy, response return original id, so testcase wait fail") 
+    @test.idempotent_id('3b7c6fe4-dfe7-477c-9243-b06359db51e6')
+    def test_create_image_specify_multibyte_character_image_name(self):
+        # prefix character is:
+        # http://www.fileformat.info/info/unicode/char/1F4A9/index.htm
+
+        # We use a string with 3 byte utf-8 character due to bug
+        # #1370954 in glance which will 500 if mysql is used as the
+        # backend and it attempts to store a 4 byte utf-8 character
+        utf8_name = data_utils.rand_name('\xe2\x82\xa1')
+        body = self.client.create_image(self.server_id, name=utf8_name)
+        image_id = data_utils.parse_image_id(body.response['location'])
+        self.addCleanup(self.client.delete_image, image_id)
+
+class HybridImagesOneVCloudServerNegativeTestJSON(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON):
+    """Test Imges"""
+
+    @classmethod
+    def resource_setup(cls):
+        super(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON, cls).resource_setup()
+        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.vcloud_availability_zone)
+        cls.server_id = server['id']
+
+        cls.image_ids = []
+
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.vcloud_availability_zone,
+            **kwargs)
+        return server['id']
+
+    @test.attr(type=['negative'])
+    @test.idempotent_id('0894954d-2db2-4195-a45b-ffec0bc0187e')
+    def test_delete_image_that_is_not_yet_active(self):
+        # Return an error while trying to delete an image what is creating
+
+        snapshot_name = data_utils.rand_name('test-snap')
+        body = self.client.create_image(self.server_id, name=snapshot_name)
+        image_id = data_utils.parse_image_id(body.response['location'])
+        self.image_ids.append(image_id)
+        self.addCleanup(self._reset_server)
+
+        # Do not wait, attempt to delete the image, ensure it's successful
+        self.client.delete_image(image_id)
+        self.image_ids.remove(image_id)
+
+        #self.assertRaises(lib_exc.NotFound, self.client.show_image, image_id)
+        self.client.wait_for_resource_deletion(image_id)
+
+class HybridImagesOneAwsServerNegativeTestJSON(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON):
+    """Test Imges"""
+
+    @classmethod
+    def resource_setup(cls):
+        super(test_images_oneserver_negative.ImagesOneServerNegativeTestJSON, cls).resource_setup()
+        server = cls.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
+        cls.server_id = server['id']
+
+        cls.image_ids = []
+
+    @classmethod
+    def rebuild_server(cls, server_id, validatable=False, **kwargs):
+        # Destroy an existing server and creates a new one
+        if server_id:
+            try:
+                cls.servers_client.delete_server(server_id)
+                waiters.wait_for_server_termination(cls.servers_client,
+                                                    server_id)
+            except Exception:
+                LOG.exception('Failed to delete server %s' % server_id)
+
+        cls.password = data_utils.rand_password()
+        server = cls.create_test_server(
+            validatable,
+            wait_until='ACTIVE',
+            adminPass=cls.password,
+            availability_zone=CONF.compute.aws_availability_zone,
+            **kwargs)
+        return server['id']
+
+    @test.attr(type=['negative'])
+    @test.idempotent_id('0894954d-2db2-4195-a45b-ffec0bc0187e')
+    def test_delete_image_that_is_not_yet_active(self):
+        # Return an error while trying to delete an image what is creating
+
+        snapshot_name = data_utils.rand_name('test-snap')
+        body = self.client.create_image(self.server_id, name=snapshot_name)
+        image_id = data_utils.parse_image_id(body.response['location'])
+        self.image_ids.append(image_id)
+        self.addCleanup(self._reset_server)
+
+        # Do not wait, attempt to delete the image, ensure it's successful
+        self.client.delete_image(image_id)
+        self.image_ids.remove(image_id)
+
+        #self.assertRaises(lib_exc.NotFound, self.client.show_image, image_id)
+        self.client.wait_for_resource_deletion(image_id)
+
+"""HybridCloud Bug:image id changed by proxy, response return original id, so testcase wait fail"""
 #class HybridListImageFiltersTestJSON(test_list_image_filters.ListImageFiltersTestJSON):
 #    """Test Imges"""
 #

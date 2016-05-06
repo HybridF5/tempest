@@ -20,6 +20,7 @@ class HybridAbsoluteLimitsTestJSON(AbsoluteLimitsTest.AbsoluteLimitsTestJSON):
 
 class HybridAbsoluteLimitsNegativeTestJSON(AbsoluteLimitsNegativeTest.AbsoluteLimitsNegativeTestJSON):
     """Test absolute limits negative"""
+
     @test.attr(type=['negative'])
     @test.idempotent_id('215cd465-d8ae-49c9-bf33-9c911913a5c8')
     def test_max_image_meta_exceed_limit(self):
@@ -42,5 +43,6 @@ class HybridAbsoluteLimitsNegativeTestJSON(AbsoluteLimitsNegativeTest.AbsoluteLi
         # A 403 Forbidden or 413 Overlimit (old behaviour) exception
         # will be raised when out of quota
         self.assertRaises((lib_exc.Forbidden, lib_exc.OverLimit),
-                          self.create_test_server, metadata=meta_data,
-			  availability_zone=CONF.compute.default_availability_zone)
+                            self.create_test_server, metadata=meta_data,
+                            availability_zone=CONF.compute.default_availability_zone)
+

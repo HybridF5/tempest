@@ -27,4 +27,3 @@ class HybridFlavorsListWithDetailsNegativeTestJSON(FlavorsListWithDetailsNegativ
 @test.SimpleNegativeAutoTest
 class HybridFlavorDetailsNegativeTestJSON(FlavorDetailsNegativeTest.FlavorDetailsNegativeTestJSON):
     """Test FlavorsListWithDetails"""
-
