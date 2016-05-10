@@ -43,6 +43,8 @@ from tempest.lib.services.compute.hypervisor_client import \
     HypervisorClient
 from tempest.lib.services.compute.images_client import ImagesClient \
     as ComputeImagesClient
+from tempest.services.volume.base.base_versions_client import BaseVersionsClient \
+    as BaseVersionsClient
 from tempest.lib.services.compute.instance_usage_audit_log_client import \
     InstanceUsagesAuditLogClient
 from tempest.lib.services.compute.interfaces_client import InterfacesClient
@@ -400,6 +402,8 @@ class Manager(manager.Manager):
             self.auth_provider, **params)
         self.limits_client = LimitsClient(self.auth_provider, **params)
         self.compute_images_client = ComputeImagesClient(self.auth_provider,
+                                                         **params)
+        self.base_versions_client = BaseVersionsClient(self.auth_provider,
                                                          **params)
         self.keypairs_client = KeyPairsClient(self.auth_provider, **params)
         self.quotas_client = QuotasClient(self.auth_provider, **params)
