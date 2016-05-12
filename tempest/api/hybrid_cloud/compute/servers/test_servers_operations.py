@@ -3,6 +3,8 @@ from oslo_log import log
 import netaddr
 import base64
 from six import moves
+import traceback
+import time
 
 import tempest.api.compute.servers.test_attach_interfaces as test_attach_interfaces
 import tempest.api.compute.servers.test_availability_zone as test_availability_zone
@@ -31,6 +33,7 @@ from tempest.common import fixed_network
 from tempest.lib import exceptions as lib_exc
 from tempest import test
 from tempest import config
+from tempest import exceptions
 
 CONF = config.CONF
 
@@ -659,7 +662,7 @@ class HybridDeleteAwsServersTestJSON(test_delete_server.DeleteServersTestJSON):
         server = self.create_test_server(wait_until='ACTIVE', availability_zone=CONF.compute.aws_availability_zone)
 
         volume = (volumes_client.create_volume(size=CONF.volume.volume_size,
-                                               availability_zone=CONF.compute.aws_availability_zone)
+                                               availability_zone=CONF.volume.aws_availability_zone)
                   ['volume'])
         self.addCleanup(volumes_client.delete_volume, volume['id'])
         waiters.wait_for_volume_status(volumes_client,
@@ -671,9 +674,30 @@ class HybridDeleteAwsServersTestJSON(test_delete_server.DeleteServersTestJSON):
                                        volume['id'], 'in-use')
 
         self.client.delete_server(server['id'])
-        waiters.wait_for_server_termination(self.client, server['id'])
+        wait_for_server_termination(self.client, server['id'])
         waiters.wait_for_volume_status(volumes_client,
                                        volume['id'], 'available')
+
+def wait_for_server_termination(client, server_id, ignore_error=False):
+    """Waits for server to reach termination."""
+    start_time = int(time.time())
+    while True:
+        try:
+            body = client.show_server(server_id)['server']
+        except lib_exc.NotFound:
+            return
+        except Exception, e:
+            LOG.exception(traceback.format_exc(e))
+
+        server_status = body['status']
+        if server_status == 'ERROR' and not ignore_error:
+            raise exceptions.BuildErrorException(server_id=server_id)
+
+        if int(time.time()) - start_time >= client.build_timeout:
+            raise exceptions.TimeoutException
+
+        time.sleep(client.build_interval)
+
 
 class HybridDeleteVCloudServersAdminTestJSON(test_delete_server.DeleteServersAdminTestJSON):
     """Test delete admin servers"""
