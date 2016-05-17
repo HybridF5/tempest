@@ -1,7 +1,9 @@
 __author__ = 'Administrator'
 
 import time
+import traceback
 
+from tempest.api.compute import base
 from tempest.common.utils import data_utils
 from tempest import config
 from tempest import test
@@ -9,17 +11,32 @@ import tempest.api.compute.servers.test_create_server as test_create_server
 from oslo_log import log
 from tempest.common import waiters
 from tempest.common import compute
+from tempest.api.hybrid_cloud.compute.servers.test_servers_operations import wait_for_server_termination
 
 LOG = log.getLogger(__name__)
 
 CONF = config.CONF
 
-class HybridCreateAwsServersTestJSON(test_create_server.ServersTestJSON):
+class HybridCreateAwsServersTestJSON(base.BaseV2ComputeTest):
+
+    disk_config = 'AUTO'
+
+    @classmethod
+    def setup_credentials(cls):
+        cls.prepare_instance_network()
+        super(HybridCreateAwsServersTestJSON, cls).setup_credentials()
+
+    @classmethod
+    def setup_clients(cls):
+        super(HybridCreateAwsServersTestJSON, cls).setup_clients()
+        cls.client = cls.servers_client
+        cls.networks_client = cls.os.networks_client
+        cls.subnets_client = cls.os.subnets_client
 
     @classmethod
     def resource_setup(cls):
         cls.set_validation_resources()
-        super(test_create_server.ServersTestJSON, cls).resource_setup()
+        super(HybridCreateAwsServersTestJSON, cls).resource_setup()
         cls.meta = {'hello': 'world'}
         cls.accessIPv4 = '1.1.1.1'
         cls.accessIPv6 = '0000:0000:0000:0000:0000:babe:220.12.22.2'
@@ -138,11 +155,19 @@ class HybridCreateAwsServersTestJSON(test_create_server.ServersTestJSON):
         volumes_client = self.volumes_extensions_client
         start_time = int(time.time())
         while True:
-            is_deleted = volumes_client.is_resource_deleted(volume['id'])
+            try:
+                is_deleted = volumes_client.is_resource_deleted(volume['id'])
+            except Exception, e:
+                LOG.warning('exception when get volume: %s' % traceback.format_exc(e))
+                continue
+            LOG.warning('volume is deleted: %s' % is_deleted)
             if is_deleted:
+                is_deleted = True
                 break
             else:
                 if int(time.time()) - start_time >= timeout:
+                    LOG.warning('delete volume time out')
+                    is_deleted = False
                     break
                 else:
                     time.sleep(2)
@@ -161,7 +186,8 @@ class HybridCreateAwsServersTestJSON(test_create_server.ServersTestJSON):
         volume = volumes_client.create_volume(
             display_name=volume_name,
             imageRef=image_id,
-            volume_type=CONF.volume.volume_type)
+            volume_type=CONF.volume.aws_volume_type,
+            availability_zone=CONF.volume.aws_availability_zone)
         waiters.wait_for_volume_status(volumes_client,
                                        volume['volume']['id'], 'available')
         LOG.warning('volume: %s' % volume)
@@ -220,7 +246,7 @@ class HybridCreateAwsServersTestJSON(test_create_server.ServersTestJSON):
     def _delete_server(self, server_id):
         LOG.warning('start to delete server')
         self.servers_client.delete_server(server_id)
-        waiters.wait_for_server_termination(self.servers_client, server_id)
+        wait_for_server_termination(self.servers_client, server_id)
         LOG.warning('end to delete server')
 
     def _get_volume(self, server_id):

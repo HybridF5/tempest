@@ -743,6 +743,12 @@ VolumeGroup = [
     cfg.StrOpt('volume_type',
                default=None,
                help='volume type of volume'),
+    cfg.StrOpt('aws_availability_zone',
+               default=None,
+               help='volume type of volume'),
+    cfg.StrOpt('aws_volume_type',
+               default=None,
+               help='volume type of volume')
 ]
 
 volume_feature_group = cfg.OptGroup(name='volume-feature-enabled',
