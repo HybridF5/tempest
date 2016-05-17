@@ -22,5 +22,6 @@ class HybridKeyPairsV2TestJSON(KeyPairsV2Test.KeyPairsV2TestJSON):
 class HybridKeyPairsNegativeTestJSON(KeyPairsNegativeTest.KeyPairsNegativeTestJSON):
     """Test Keypairs negative"""
 
+@testtools.skip("Do not support")
 class HybridKeyPairsV22TestJSON(KeyPairsV22Test.KeyPairsV22TestJSON):
     """Test Keypairs v22"""
